@@ -28,6 +28,9 @@ interface CreateTokenRequest {
     imageBase64: string;
     revokeFreeze: boolean;
     revokeMint: boolean;
+    telegram?: string;
+    website?: string;
+    twitter?: string;
   };
 }
 
@@ -185,6 +188,25 @@ serve(async (req) => {
     // Step 2: Upload metadata to GitHub
     console.log('📝 Creating metadata on GitHub...');
     const metadataFileName = `${tokenData.symbol.toLowerCase()}-${Date.now()}.json`;
+    
+    // Build metadata with social links
+    const metadata: any = {
+      name: tokenData.name,
+      symbol: tokenData.symbol,
+      description: tokenData.description,
+      image: imageResult.url,
+    };
+    
+    // Add social links if provided
+    const extensions: any = {};
+    if (tokenData.website) extensions.website = tokenData.website;
+    if (tokenData.twitter) extensions.twitter = tokenData.twitter;
+    if (tokenData.telegram) extensions.telegram = tokenData.telegram;
+    
+    if (Object.keys(extensions).length > 0) {
+      metadata.extensions = extensions;
+    }
+    
     const metadataUploadResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/upload-to-github`, {
       method: 'POST',
       headers: {
@@ -194,12 +216,7 @@ serve(async (req) => {
       body: JSON.stringify({
         type: 'metadata',
         fileName: metadataFileName,
-        metadata: {
-          name: tokenData.name,
-          symbol: tokenData.symbol,
-          description: tokenData.description,
-          image: imageResult.url,
-        },
+        metadata: metadata,
       }),
     });
 
@@ -217,12 +234,13 @@ serve(async (req) => {
 
     // Step 3.5: Create token mint
     console.log('🪙 Creating token mint...');
-    const freezeAuthority = tokenData.revokeFreeze ? null : platformKeypair.publicKey;
+    const freezeAuthority = tokenData.revokeFreeze ? null : userPublicKey;
+    const mintAuthority = tokenData.revokeMint ? platformKeypair.publicKey : userPublicKey;
     
     const mint = await createMint(
       connection,
       platformKeypair, // payer
-      platformKeypair.publicKey, // mint authority
+      mintAuthority, // mint authority
       freezeAuthority, // freeze authority
       tokenData.decimals,
       mintKeypair, // use our generated keypair
@@ -281,7 +299,7 @@ serve(async (req) => {
       platformKeypair, // payer
       mint,
       userTokenAccount.address,
-      platformKeypair.publicKey, // mint authority
+      mintAuthority, // use the authority we set earlier
       supplyAmount,
     );
 

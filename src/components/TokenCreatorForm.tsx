@@ -33,7 +33,18 @@ export const TokenCreatorForm = () => {
     description: '',
     revokeFreeze: true,
     revokeMint: false,
+    telegram: '',
+    website: '',
+    twitter: '',
   });
+
+  // Calculate dynamic cost based on revoke options
+  const calculateCost = () => {
+    let cost = 0.15; // Base cost
+    if (formData.revokeFreeze) cost += 0.1;
+    if (formData.revokeMint) cost += 0.05;
+    return cost;
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,7 +88,8 @@ export const TokenCreatorForm = () => {
       
       // Step 1: Send payment to platform wallet
       const platformWalletAddress = new PublicKey(import.meta.env.VITE_PLATFORM_WALLET_ADDRESS || '11111111111111111111111111111111');
-      const platformFee = 0.15 * LAMPORTS_PER_SOL;
+      const totalCost = calculateCost();
+      const platformFee = totalCost * LAMPORTS_PER_SOL;
       
       const paymentTransaction = new Transaction().add(
         SystemProgram.transfer({
@@ -123,6 +135,9 @@ export const TokenCreatorForm = () => {
             imageBase64: imageFile,
             revokeFreeze: formData.revokeFreeze,
             revokeMint: formData.revokeMint,
+            telegram: formData.telegram,
+            website: formData.website,
+            twitter: formData.twitter,
           },
         }),
       });
@@ -213,25 +228,37 @@ export const TokenCreatorForm = () => {
               </div>
             </div>
 
-            <Button 
-              onClick={() => {
-                setTokenCreated(null);
-                setFormData({
-                  name: '',
-                  symbol: '',
-                  decimals: '9',
-                  supply: '1000000000',
-                  description: '',
-                  revokeFreeze: true,
-                  revokeMint: false,
-                });
-                setImageFile('');
-                setImagePreview('');
-              }}
-              className="w-full h-12 bg-gradient-to-r from-primary to-cyan-500 hover:opacity-90"
-            >
-              Create Another Token
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => window.open('https://raydium.io/liquidity/create-pool/', '_blank')}
+                className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90"
+              >
+                Create Liquidity Pool
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  setTokenCreated(null);
+                  setFormData({
+                    name: '',
+                    symbol: '',
+                    decimals: '9',
+                    supply: '1000000000',
+                    description: '',
+                    revokeFreeze: true,
+                    revokeMint: false,
+                    telegram: '',
+                    website: '',
+                    twitter: '',
+                  });
+                  setImageFile('');
+                  setImagePreview('');
+                }}
+                className="w-full h-12 bg-gradient-to-r from-primary to-cyan-500 hover:opacity-90"
+              >
+                Create Another Token
+              </Button>
+            </div>
           </Card>
         </div>
       </section>
@@ -297,10 +324,20 @@ export const TokenCreatorForm = () => {
                     />
                     <label 
                       htmlFor="image"
-                      className="flex items-center justify-center gap-2 bg-input border border-border h-12 rounded-lg cursor-pointer hover:border-primary transition-colors"
+                      className={`flex items-center justify-center gap-2 border h-12 rounded-lg cursor-pointer transition-colors overflow-hidden ${
+                        imagePreview 
+                          ? 'border-primary bg-primary/5 p-1' 
+                          : 'bg-input border-border hover:border-primary'
+                      }`}
                     >
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm">{imagePreview ? 'Change' : 'Upload'}</span>
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="h-full w-full object-cover rounded" />
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span className="text-sm">Upload</span>
+                        </>
+                      )}
                     </label>
                   </div>
                 </div>
@@ -342,10 +379,13 @@ export const TokenCreatorForm = () => {
                       Revoke Freeze allows you to create a liquidity pool
                     </p>
                   </div>
-                  <Switch
-                    checked={formData.revokeFreeze}
-                    onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
-                  />
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-yellow-500">+0.1 SOL</span>
+                    <Switch
+                      checked={formData.revokeFreeze}
+                      onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
@@ -355,10 +395,13 @@ export const TokenCreatorForm = () => {
                       Mint Authority allows you to increase tokens supply
                     </p>
                   </div>
-                  <Switch
-                    checked={formData.revokeMint}
-                    onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
-                  />
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-yellow-500">+0.05 SOL</span>
+                    <Switch
+                      checked={formData.revokeMint}
+                      onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
+                    />
+                  </div>
                 </div>
 
                 <button
@@ -366,9 +409,47 @@ export const TokenCreatorForm = () => {
                   onClick={() => setShowMoreOptions(!showMoreOptions)}
                   className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
                 >
-                  Show More Options
+                  {showMoreOptions ? 'Hide More Options' : 'Show More Options'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${showMoreOptions ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Social Media Links */}
+                {showMoreOptions && (
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="telegram" className="text-sm">Telegram link</Label>
+                      <Input
+                        id="telegram"
+                        placeholder="(Optional)"
+                        value={formData.telegram}
+                        onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
+                        className="bg-input border-border h-12 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="website" className="text-sm">Website link</Label>
+                      <Input
+                        id="website"
+                        placeholder="(Optional)"
+                        value={formData.website}
+                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                        className="bg-input border-border h-12 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter" className="text-sm">Twitter or X link</Label>
+                      <Input
+                        id="twitter"
+                        placeholder="(Optional)"
+                        value={formData.twitter}
+                        onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                        className="bg-input border-border h-12 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
@@ -377,14 +458,6 @@ export const TokenCreatorForm = () => {
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
-                <Button
-                  type="button"
-                  disabled={!publicKey}
-                  className="w-full h-14 bg-gradient-to-r from-primary to-cyan-500 hover:opacity-90 text-base font-semibold rounded-xl"
-                >
-                  Select Wallet
-                </Button>
-
                 <div className="relative">
                   <Button
                     type="submit"
@@ -400,10 +473,10 @@ export const TokenCreatorForm = () => {
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-lg">Total Creation Cost</span>
                         <div className="flex items-center gap-2">
-                          <span className="line-through text-sm opacity-60">0.30 SOL</span>
-                          <span className="text-2xl font-bold text-green-400">0.15 SOL</span>
+                          <span className="line-through text-sm opacity-60">0.40 SOL</span>
+                          <span className="text-2xl font-bold text-green-400">{calculateCost().toFixed(2)} SOL</span>
                         </div>
-                        <span className="text-xs text-yellow-400">🎉 50% Launch Discount!</span>
+                        <span className="text-xs text-yellow-400">🎉 62.5% Launch Discount!</span>
                       </div>
                     )}
                   </Button>

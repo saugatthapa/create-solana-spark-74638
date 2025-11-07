@@ -2,7 +2,6 @@ import { WalletContextProvider } from '@/components/WalletContextProvider';
 import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
 import { FeaturesSection } from '@/components/FeaturesSection';
-import { TokenCreatorForm } from '@/components/TokenCreatorForm';
 
 const Index = () => {
   return (
@@ -11,7 +10,6 @@ const Index = () => {
         <Header />
         <HeroSection />
         <FeaturesSection />
-        <TokenCreatorForm />
         
         {/* Footer */}
         <footer className="py-12 px-4 border-t border-border">

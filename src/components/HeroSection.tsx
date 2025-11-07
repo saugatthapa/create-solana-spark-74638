@@ -41,14 +41,11 @@ export const HeroSection = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a 
-            href="#create" 
+            href="/create" 
             className="px-8 py-4 rounded-xl bg-primary hover:bg-primary/90 transition-all font-semibold text-base"
           >
             Create Your Token Now
           </a>
-          <button className="px-8 py-4 rounded-xl bg-secondary hover:bg-secondary/80 transition-all font-semibold text-base">
-            Explore Launches
-          </button>
         </div>
 
         {/* Stats */}
@@ -61,7 +58,7 @@ export const HeroSection = () => {
           </div>
           <div className="glass-card rounded-2xl p-6 border border-border hover:border-accent transition-all">
             <div className="text-4xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-              $0.00025
+              $0.15
             </div>
             <div className="text-muted-foreground mt-2">Average Cost</div>
           </div>
