@@ -210,7 +210,12 @@ serve(async (req) => {
     const metadataResult = await metadataUploadResponse.json();
     console.log('✅ Metadata uploaded:', metadataResult.url);
 
-    // Step 3: Create token mint
+    // Step 3: Generate mint keypair first (we need this as a signer for metadata)
+    console.log('🪙 Generating mint keypair...');
+    const mintKeypair = Keypair.generate();
+    console.log('✅ Mint will be:', mintKeypair.publicKey.toBase58());
+
+    // Step 3.5: Create token mint
     console.log('🪙 Creating token mint...');
     const freezeAuthority = tokenData.revokeFreeze ? null : platformKeypair.publicKey;
     
@@ -220,32 +225,32 @@ serve(async (req) => {
       platformKeypair.publicKey, // mint authority
       freezeAuthority, // freeze authority
       tokenData.decimals,
+      mintKeypair, // use our generated keypair
     );
 
     console.log('✅ Token mint created:', mint.toBase58());
 
-    // Step 3.5: Create on-chain metadata using Metaplex UMI
+    // Step 4: Create on-chain metadata using Metaplex UMI
     console.log('📝 Creating on-chain metadata with Metaplex...');
     
     // Initialize UMI
     const umi = createUmi(SOLANA_RPC_URL)
       .use(mplTokenMetadata());
 
-    // Convert Web3.js keypair to UMI format
-    const umiKeypair = fromWeb3JsKeypair(platformKeypair);
-    const umiSigner = createSignerFromKeypair(umi, umiKeypair);
-    umi.use(signerIdentity(umiSigner));
-
-    // Convert mint to UMI public key format
-    const umiMint = umiPublicKey(mint.toBase58());
+    // Convert Web3.js keypairs to UMI format
+    const umiPlatformKeypair = fromWeb3JsKeypair(platformKeypair);
+    const umiMintKeypair = fromWeb3JsKeypair(mintKeypair); // mint as signer
+    const umiPlatformSigner = createSignerFromKeypair(umi, umiPlatformKeypair);
+    const umiMintSigner = createSignerFromKeypair(umi, umiMintKeypair);
+    umi.use(signerIdentity(umiPlatformSigner));
 
     // Create metadata using createV1
     console.log('📝 Sending metadata transaction...');
     const tx = await createV1(umi, {
-      mint: umiMint,
-      authority: umiSigner,
-      payer: umiSigner,
-      updateAuthority: umiSigner.publicKey,
+      mint: umiMintSigner, // pass as signer, not just public key
+      authority: umiPlatformSigner,
+      payer: umiPlatformSigner,
+      updateAuthority: umiPlatformSigner.publicKey,
       name: tokenData.name,
       symbol: tokenData.symbol,
       uri: metadataResult.url,
