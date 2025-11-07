@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from "npm:@solana/web3.js@1.98.4";
+import { Connection, Keypair, PublicKey, SystemProgram } from "npm:@solana/web3.js@1.98.4";
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, AuthorityType } from "npm:@solana/spl-token@0.4.14";
 import bs58 from "https://esm.sh/bs58@5.0.0";
+import { createUmi } from "npm:@metaplex-foundation/umi-bundle-defaults";
+import { createV1, mplTokenMetadata, TokenStandard } from "npm:@metaplex-foundation/mpl-token-metadata";
+import { createSignerFromKeypair, signerIdentity, publicKey as umiPublicKey, percentAmount } from "npm:@metaplex-foundation/umi";
+import { fromWeb3JsKeypair } from "npm:@metaplex-foundation/umi-web3js-adapters";
+import { base58 as umiBase58 } from "npm:@metaplex-foundation/umi/serializers";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -205,8 +210,8 @@ serve(async (req) => {
     const metadataResult = await metadataUploadResponse.json();
     console.log('✅ Metadata uploaded:', metadataResult.url);
 
-    // Step 3: Create token mint with metadata URI
-    console.log('🪙 Creating token mint with metadata...');
+    // Step 3: Create token mint
+    console.log('🪙 Creating token mint...');
     const freezeAuthority = tokenData.revokeFreeze ? null : platformKeypair.publicKey;
     
     const mint = await createMint(
@@ -218,6 +223,38 @@ serve(async (req) => {
     );
 
     console.log('✅ Token mint created:', mint.toBase58());
+
+    // Step 3.5: Create on-chain metadata using Metaplex UMI
+    console.log('📝 Creating on-chain metadata with Metaplex...');
+    
+    // Initialize UMI
+    const umi = createUmi(SOLANA_RPC_URL)
+      .use(mplTokenMetadata());
+
+    // Convert Web3.js keypair to UMI format
+    const umiKeypair = fromWeb3JsKeypair(platformKeypair);
+    const umiSigner = createSignerFromKeypair(umi, umiKeypair);
+    umi.use(signerIdentity(umiSigner));
+
+    // Convert mint to UMI public key format
+    const umiMint = umiPublicKey(mint.toBase58());
+
+    // Create metadata using createV1
+    console.log('📝 Sending metadata transaction...');
+    const tx = await createV1(umi, {
+      mint: umiMint,
+      authority: umiSigner,
+      payer: umiSigner,
+      updateAuthority: umiSigner.publicKey,
+      name: tokenData.name,
+      symbol: tokenData.symbol,
+      uri: metadataResult.url,
+      sellerFeeBasisPoints: percentAmount(0),
+      tokenStandard: TokenStandard.Fungible,
+    }).sendAndConfirm(umi);
+
+    const txSig = umiBase58.deserialize(tx.signature)[0];
+    console.log('✅ On-chain metadata created:', txSig);
 
     // Step 4: Create token account for user
     console.log('📦 Creating token account for user...');
