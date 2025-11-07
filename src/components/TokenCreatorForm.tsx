@@ -1,0 +1,462 @@
+import { useState } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Keypair } from '@solana/web3.js';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { Card } from '@/components/ui/card';
+import { Loader2, Upload, ChevronDown, ExternalLink, CheckCircle } from 'lucide-react';
+
+export const TokenCreatorForm = () => {
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [imageFile, setImageFile] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [tokenCreated, setTokenCreated] = useState<{
+    mintAddress: string;
+    signature: string;
+    metadataUri: string;
+  } | null>(null);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    symbol: '',
+    decimals: '9',
+    supply: '1000000000',
+    description: '',
+    revokeFreeze: true,
+    revokeMint: false,
+  });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setImageFile(base64);
+        setImagePreview(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!publicKey || !sendTransaction) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to create a token",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!imageFile) {
+      toast({
+        title: "Image required",
+        description: "Please upload a token image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log('🚀 Starting token creation...');
+      
+      // Step 1: Send payment to platform wallet
+      const platformWalletAddress = new PublicKey(import.meta.env.VITE_PLATFORM_WALLET_ADDRESS || '11111111111111111111111111111111');
+      const platformFee = 0.15 * LAMPORTS_PER_SOL;
+      
+      const paymentTransaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: platformWalletAddress,
+          lamports: platformFee,
+        })
+      );
+
+      paymentTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      paymentTransaction.feePayer = publicKey;
+
+      console.log('💰 Sending payment to platform...');
+      const paymentSignature = await sendTransaction(paymentTransaction, connection);
+      
+      console.log('⏳ Confirming payment...');
+      await connection.confirmTransaction(paymentSignature, 'confirmed');
+      
+      console.log('✅ Payment confirmed:', paymentSignature);
+
+      toast({
+        title: "Payment Confirmed 💰",
+        description: "Creating your token on Solana...",
+      });
+
+      // Step 2: Call backend to create token
+      console.log('🔨 Calling backend to create token...');
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          userWallet: publicKey.toBase58(),
+          paymentSignature,
+          tokenData: {
+            name: formData.name,
+            symbol: formData.symbol,
+            decimals: parseInt(formData.decimals),
+            supply: formData.supply,
+            description: formData.description,
+            imageBase64: imageFile,
+            revokeFreeze: formData.revokeFreeze,
+            revokeMint: formData.revokeMint,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create token');
+      }
+
+      const result = await response.json();
+      console.log('✅ Token created successfully!');
+      console.log('Mint address:', result.mintAddress);
+      console.log('Mint signature:', result.mintSignature);
+
+      setTokenCreated({
+        mintAddress: result.mintAddress,
+        signature: result.mintSignature,
+        metadataUri: result.metadataUri,
+      });
+
+      toast({
+        title: "Token Created Successfully! 🎉",
+        description: `Your ${formData.symbol} token is now live on Solana!`,
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating token:', error);
+      toast({
+        title: "Error Creating Token",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Success Screen
+  if (tokenCreated) {
+    return (
+      <section id="create" className="py-20 px-4 min-h-screen">
+        <div className="container mx-auto max-w-2xl">
+          <Card className="bg-card border-border p-8 text-center space-y-6">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+            <h2 className="text-3xl font-bold">Token Created Successfully! 🎉</h2>
+            
+            <div className="space-y-4 text-left">
+              <div className="bg-background p-4 rounded-lg">
+                <Label className="text-xs text-muted-foreground">Mint Address</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-sm break-all">{tokenCreated.mintAddress}</code>
+                  <a 
+                    href={`https://explorer.solana.com/address/${tokenCreated.mintAddress}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="bg-background p-4 rounded-lg">
+                <Label className="text-xs text-muted-foreground">Transaction</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-sm break-all">{tokenCreated.signature}</code>
+                  <a 
+                    href={`https://explorer.solana.com/tx/${tokenCreated.signature}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="bg-background p-4 rounded-lg">
+                <Label className="text-xs text-muted-foreground">Metadata URI</Label>
+                <a 
+                  href={tokenCreated.metadataUri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:text-primary/80 break-all"
+                >
+                  {tokenCreated.metadataUri}
+                </a>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setTokenCreated(null);
+                setFormData({
+                  name: '',
+                  symbol: '',
+                  decimals: '9',
+                  supply: '1000000000',
+                  description: '',
+                  revokeFreeze: true,
+                  revokeMint: false,
+                });
+                setImageFile('');
+                setImagePreview('');
+              }}
+              className="w-full h-12 bg-gradient-to-r from-primary to-cyan-500 hover:opacity-90"
+            >
+              Create Another Token
+            </Button>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section id="create" className="py-20 px-4 min-h-screen">
+      <div className="container mx-auto max-w-7xl">
+        <form onSubmit={handleSubmit}>
+          <div className="grid lg:grid-cols-[1fr,400px] gap-8">
+            {/* Left Column - Form */}
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm">Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="bg-input border-border h-12 rounded-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="symbol" className="text-sm">Symbol</Label>
+                  <Input
+                    id="symbol"
+                    value={formData.symbol}
+                    onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                    required
+                    maxLength={10}
+                    className="bg-input border-border h-12 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="decimals" className="text-sm">Decimals</Label>
+                  <Input
+                    id="decimals"
+                    type="number"
+                    min="0"
+                    max="9"
+                    value={formData.decimals}
+                    onChange={(e) => setFormData({ ...formData, decimals: e.target.value })}
+                    required
+                    className="bg-input border-border h-12 rounded-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-sm">Image</Label>
+                  <div className="relative">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="image"
+                      className="flex items-center justify-center gap-2 bg-input border border-border h-12 rounded-lg cursor-pointer hover:border-primary transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">{imagePreview ? 'Change' : 'Upload'}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="supply" className="text-sm">Supply</Label>
+                <Input
+                  id="supply"
+                  type="number"
+                  min="1"
+                  value={formData.supply}
+                  onChange={(e) => setFormData({ ...formData, supply: e.target.value })}
+                  required
+                  className="bg-input border-border h-12 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                  className="bg-input border-border rounded-lg resize-none"
+                />
+              </div>
+
+              {/* Advanced Options */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Revoke Freeze</span>
+                      <span className="text-xs text-destructive">(required)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Revoke Freeze allows you to create a liquidity pool
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.revokeFreeze}
+                    onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
+                  <div>
+                    <span className="font-medium">Revoke Mint</span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mint Authority allows you to increase tokens supply
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.revokeMint}
+                    onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMoreOptions(!showMoreOptions)}
+                  className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  Show More Options
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showMoreOptions ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground">
+                tip: coin data cannot be changed after creation
+              </p>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-2">
+                <Button
+                  type="button"
+                  disabled={!publicKey}
+                  className="w-full h-14 bg-gradient-to-r from-primary to-cyan-500 hover:opacity-90 text-base font-semibold rounded-xl"
+                >
+                  Select Wallet
+                </Button>
+
+                <div className="relative">
+                  <Button
+                    type="submit"
+                    disabled={loading || !publicKey}
+                    className="w-full h-20 bg-gradient-to-r from-accent to-purple-600 hover:opacity-90 text-base font-semibold rounded-xl"
+                  >
+                    {loading ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Creating Token...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-lg">Total Creation Cost</span>
+                        <div className="flex items-center gap-2">
+                          <span className="line-through text-sm opacity-60">0.30 SOL</span>
+                          <span className="text-2xl font-bold text-green-400">0.15 SOL</span>
+                        </div>
+                        <span className="text-xs text-yellow-400">🎉 50% Launch Discount!</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {!publicKey && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Connect your wallet to create a token
+                </p>
+              )}
+            </div>
+
+            {/* Right Column - Live Preview */}
+            <div className="lg:sticky lg:top-24 h-fit">
+              <Card className="bg-card border-border p-6">
+                  <div className="text-center mb-6">
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-6">Live Preview</h3>
+                  
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center overflow-hidden">
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Token logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-3xl font-bold text-white">?</span>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-xl font-bold">
+                        {formData.name || 'Token Name'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wider">
+                        ${formData.symbol || 'TICKER'}
+                      </p>
+                    </div>
+                    
+                    <div className="w-full pt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Your token description will appear here...
+                      </p>
+                      {formData.description && (
+                        <p className="text-sm">{formData.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">Preview</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  );
+};
