@@ -1,1 +1,7 @@
 project_id = "kqtltedpmmbypwiadmyr"
+
+[functions.upload-to-github]
+verify_jwt = false
+
+[functions.create-token]
+verify_jwt = false
