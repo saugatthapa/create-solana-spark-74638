@@ -87,16 +87,72 @@ serve(async (req) => {
       throw new Error('Payment transaction not found');
     }
 
-    // Verify payment was to platform wallet
-    const platformWalletReceived = paymentTx.meta?.postBalances && paymentTx.meta?.preBalances
-      ? (paymentTx.meta.postBalances[1] || 0) - (paymentTx.meta.preBalances[1] || 0)
-      : 0;
+    // Get account keys for versioned transaction
+    const accountKeys = paymentTx.transaction.message.getAccountKeys({
+      accountKeysFromLookups: paymentTx.meta?.loadedAddresses
+    });
 
-    if (platformWalletReceived < 0.15 * 1_000_000_000) {
-      throw new Error('Invalid payment amount');
+    // Find the SOL transfer instruction by checking the program ID
+    const message = paymentTx.transaction.message;
+    const compiledInstructions = 'compiledInstructions' in message 
+      ? message.compiledInstructions 
+      : (message as any).instructions;
+
+    let transferInstruction: any = null;
+    let instructionAccountKeys: number[] | null = null;
+
+    for (const ix of compiledInstructions) {
+      const programId = accountKeys.get(ix.programIdIndex);
+      if (programId && programId.equals(SystemProgram.programId)) {
+        transferInstruction = ix;
+        instructionAccountKeys = ix.accountKeyIndexes || ix.accounts;
+        break;
+      }
     }
 
-    console.log('✅ Payment verified:', platformWalletReceived / 1_000_000_000, 'SOL');
+    if (!transferInstruction || !instructionAccountKeys) {
+      throw new Error('No transfer instruction found in payment transaction');
+    }
+
+    // Get the accounts involved in the transfer
+    const fromAccount = accountKeys.get(instructionAccountKeys[0]);
+    const toAccount = accountKeys.get(instructionAccountKeys[1]);
+
+    if (!fromAccount || !toAccount) {
+      throw new Error('Could not resolve transfer accounts');
+    }
+
+    console.log('📝 Transfer from:', fromAccount.toBase58());
+    console.log('📝 Transfer to:', toAccount.toBase58());
+    console.log('📝 Platform wallet:', platformKeypair.publicKey.toBase58());
+
+    // Verify the payment is to the platform wallet
+    if (!toAccount.equals(platformKeypair.publicKey)) {
+      throw new Error('Payment was not sent to platform wallet');
+    }
+
+    // Decode the transfer amount from instruction data
+    // SystemProgram.transfer instruction data format: [u32 instruction_type, u64 lamports]
+    const instructionData = new Uint8Array(transferInstruction.data);
+    if (instructionData.length < 12) {
+      throw new Error('Invalid transfer instruction data');
+    }
+
+    // Read lamports as little-endian u64 (skip first 4 bytes which is instruction type)
+    const lamportsBuffer = instructionData.slice(4, 12);
+    let transferAmount = 0;
+    for (let i = 0; i < 8; i++) {
+      transferAmount += lamportsBuffer[i] * Math.pow(256, i);
+    }
+
+    console.log('💰 Transfer amount:', transferAmount / 1_000_000_000, 'SOL');
+
+    const REQUIRED_PAYMENT = 0.15 * 1_000_000_000; // 0.15 SOL in lamports
+    if (transferAmount < REQUIRED_PAYMENT) {
+      throw new Error(`Invalid payment amount: ${transferAmount / 1_000_000_000} SOL (required: 0.15 SOL)`);
+    }
+
+    console.log('✅ Payment verified:', transferAmount / 1_000_000_000, 'SOL');
 
     // Step 1: Upload image to GitHub FIRST
     console.log('📸 Uploading image to GitHub...');
