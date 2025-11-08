@@ -227,57 +227,55 @@ serve(async (req) => {
     const metadataResult = await metadataUploadResponse.json();
     console.log('✅ Metadata uploaded:', metadataResult.url);
 
-    // Step 3: Generate mint keypair first (we need this as a signer for metadata)
+    // Step 3: Generate mint keypair and create token with metadata using Metaplex
     console.log('🪙 Generating mint keypair...');
     const mintKeypair = Keypair.generate();
     console.log('✅ Mint will be:', mintKeypair.publicKey.toBase58());
 
-    // Step 3.5: Create token mint
-    console.log('🪙 Creating token mint...');
-    const freezeAuthority = tokenData.revokeFreeze ? null : userPublicKey;
-    const mintAuthority = tokenData.revokeMint ? platformKeypair.publicKey : userPublicKey;
-    
-    const mint = await createMint(
-      connection,
-      platformKeypair, // payer
-      mintAuthority, // mint authority
-      freezeAuthority, // freeze authority
-      tokenData.decimals,
-      mintKeypair, // use our generated keypair
-    );
-
-    console.log('✅ Token mint created:', mint.toBase58());
-
-    // Step 4: Create on-chain metadata using Metaplex UMI
-    console.log('📝 Creating on-chain metadata with Metaplex...');
-    
-    // Initialize UMI
+    // Initialize UMI for Metaplex
+    console.log('📝 Creating token and metadata with Metaplex...');
     const umi = createUmi(SOLANA_RPC_URL)
       .use(mplTokenMetadata());
 
     // Convert Web3.js keypairs to UMI format
     const umiPlatformKeypair = fromWeb3JsKeypair(platformKeypair);
-    const umiMintKeypair = fromWeb3JsKeypair(mintKeypair); // mint as signer
+    const umiMintKeypair = fromWeb3JsKeypair(mintKeypair);
     const umiPlatformSigner = createSignerFromKeypair(umi, umiPlatformKeypair);
     const umiMintSigner = createSignerFromKeypair(umi, umiMintKeypair);
+    const umiUserPublicKey = umiPublicKey(userPublicKey.toBase58());
     umi.use(signerIdentity(umiPlatformSigner));
 
-    // Create metadata using createV1
-    console.log('📝 Sending metadata transaction...');
-    const tx = await createV1(umi, {
-      mint: umiMintSigner, // pass as signer, not just public key
+    // Determine authorities based on revoke options
+    const mintAuthority = tokenData.revokeMint ? umiPlatformSigner.publicKey : umiUserPublicKey;
+    const freezeAuthority = tokenData.revokeFreeze ? null : umiUserPublicKey;
+
+    // Create mint and metadata in one transaction using Metaplex createV1
+    console.log('📝 Sending create transaction...');
+    const createArgs: any = {
+      mint: umiMintSigner,
       authority: umiPlatformSigner,
       payer: umiPlatformSigner,
-      updateAuthority: umiPlatformSigner.publicKey,
+      updateAuthority: mintAuthority,
       name: tokenData.name,
       symbol: tokenData.symbol,
       uri: metadataResult.url,
       sellerFeeBasisPoints: percentAmount(0),
       tokenStandard: TokenStandard.Fungible,
-    }).sendAndConfirm(umi);
+      decimals: tokenData.decimals,
+      mintAuthority: mintAuthority,
+    };
+
+    // Only add freezeAuthority if not revoking
+    if (!tokenData.revokeFreeze) {
+      createArgs.freezeAuthority = freezeAuthority;
+    }
+
+    const tx = await createV1(umi, createArgs).sendAndConfirm(umi);
 
     const txSig = umiBase58.deserialize(tx.signature)[0];
-    console.log('✅ On-chain metadata created:', txSig);
+    const mint = mintKeypair.publicKey;
+    console.log('✅ Token and metadata created:', mint.toBase58());
+    console.log('✅ Transaction signature:', txSig);
 
     // Step 4: Create token account for user
     console.log('📦 Creating token account for user...');
@@ -294,18 +292,21 @@ serve(async (req) => {
     const supplyAmount = BigInt(tokenData.supply) * BigInt(10 ** tokenData.decimals);
     console.log('🎨 Minting supply to user:', supplyAmount.toString());
     
+    // Determine who has mint authority for minting
+    const currentMintAuthority = tokenData.revokeMint ? platformKeypair : platformKeypair;
+    
     const mintSignature = await mintTo(
       connection,
       platformKeypair, // payer
       mint,
       userTokenAccount.address,
-      mintAuthority, // use the authority we set earlier
+      currentMintAuthority, // use platform as authority initially
       supplyAmount,
     );
 
     console.log('✅ Tokens minted:', mintSignature);
 
-    // Step 6: Revoke mint authority if requested
+    // Step 6: Transfer or revoke mint authority based on user choice
     if (tokenData.revokeMint) {
       console.log('🔒 Revoking mint authority...');
       await setAuthority(
@@ -317,6 +318,17 @@ serve(async (req) => {
         null, // revoke (set to null)
       );
       console.log('✅ Mint authority revoked');
+    } else {
+      console.log('🔑 Transferring mint authority to user...');
+      await setAuthority(
+        connection,
+        platformKeypair, // payer
+        mint,
+        platformKeypair.publicKey, // current authority
+        AuthorityType.MintTokens,
+        userPublicKey, // transfer to user
+      );
+      console.log('✅ Mint authority transferred to user');
     }
 
     return new Response(
@@ -336,7 +348,17 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error creating token:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    // Better error serialization
+    let errorMessage = 'Unknown error occurred';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage = JSON.stringify(error);
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
     return new Response(
       JSON.stringify({
         success: false,
