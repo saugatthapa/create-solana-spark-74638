@@ -344,15 +344,7 @@ serve(async (req) => {
       console.log('✅ Freeze authority already revoked during creation');
     }
 
-    // Transfer metadata update authority to user
-    console.log('📝 Transferring metadata update authority to user...');
-    const { updateV1 } = await import("npm:@metaplex-foundation/mpl-token-metadata");
-    await updateV1(umi, {
-      mint: umiPublicKey(mint.toBase58()),
-      authority: umiPlatformSigner,
-      newUpdateAuthority: umiUserPublicKey,
-    }).sendAndConfirm(umi);
-    console.log('✅ Metadata update authority transferred to:', userPublicKey.toBase58());
+    console.log('✅ All authorities configured successfully');
 
     return new Response(
       JSON.stringify({
