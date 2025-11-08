@@ -1,5 +1,6 @@
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Coins } from 'lucide-react';
+import { NetworkSelector } from '@/components/NetworkSelector';
 
 export const Header = () => {
   return (
@@ -11,8 +12,10 @@ export const Header = () => {
           </div>
           <span className="text-xl font-bold">TokenLaunch</span>
         </div>
-        
-        <WalletMultiButton className="!bg-accent hover:!bg-accent/90 !rounded-lg !h-11 !px-6 !font-semibold !text-sm transition-all" />
+        <div className="flex items-center gap-3">
+          <NetworkSelector />
+          <WalletMultiButton className="!bg-accent hover:!bg-accent/90 !rounded-lg !h-11 !px-6 !font-semibold !text-sm transition-all" />
+        </div>
       </div>
     </header>
   );

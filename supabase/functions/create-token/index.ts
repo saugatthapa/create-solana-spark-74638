@@ -14,11 +14,12 @@ const corsHeaders = {
 };
 
 const PLATFORM_WALLET_PRIVATE_KEY = Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY');
-const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
+// RPC will be selected per-request
 
 interface CreateTokenRequest {
   userWallet: string;
   paymentSignature: string;
+  network?: 'devnet' | 'mainnet-beta';
   tokenData: {
     name: string;
     symbol: string;
@@ -44,9 +45,11 @@ serve(async (req) => {
       throw new Error('Platform wallet not configured');
     }
 
-    const { userWallet, paymentSignature, tokenData }: CreateTokenRequest = await req.json();
+    const { userWallet, paymentSignature, tokenData, network }: CreateTokenRequest = await req.json();
 
-    console.log('🚀 Starting token creation for user:', userWallet);
+    const SOLANA_RPC_URL = network === 'devnet' ? 'https://api.devnet.solana.com' : 'https://api.mainnet-beta.solana.com';
+
+    console.log('🚀 Starting token creation for user:', userWallet, 'on', network ?? 'mainnet-beta');
 
     // Initialize Solana connection
     const connection = new Connection(SOLANA_RPC_URL, 'confirmed');

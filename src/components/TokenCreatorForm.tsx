@@ -9,9 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Loader2, Upload, ChevronDown, ExternalLink, CheckCircle } from 'lucide-react';
+import { FullScreenLoader } from '@/components/FullScreenLoader';
+import { useNetwork } from '@/contexts/NetworkContext';
 
 export const TokenCreatorForm = () => {
   const { connection } = useConnection();
+  const { network } = useNetwork();
   const { publicKey, sendTransaction } = useWallet();
   const { toast } = useToast();
   
@@ -124,6 +127,7 @@ export const TokenCreatorForm = () => {
         body: JSON.stringify({
           userWallet: publicKey.toBase58(),
           paymentSignature,
+          network,
           tokenData: {
             name: formData.name,
             symbol: formData.symbol,
@@ -188,7 +192,7 @@ export const TokenCreatorForm = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-sm break-all">{tokenCreated.mintAddress}</code>
                   <a 
-                    href={`https://explorer.solana.com/address/${tokenCreated.mintAddress}?cluster=devnet`}
+                    href={`https://explorer.solana.com/address/${tokenCreated.mintAddress}${network === 'devnet' ? '?cluster=devnet' : ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:text-primary/80"
@@ -203,7 +207,7 @@ export const TokenCreatorForm = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <code className="text-sm break-all">{tokenCreated.signature}</code>
                   <a 
-                    href={`https://explorer.solana.com/tx/${tokenCreated.signature}?cluster=devnet`}
+                    href={`https://explorer.solana.com/tx/${tokenCreated.signature}${network === 'devnet' ? '?cluster=devnet' : ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:text-primary/80"
@@ -213,17 +217,7 @@ export const TokenCreatorForm = () => {
                 </div>
               </div>
 
-              <div className="bg-background p-4 rounded-lg">
-                <Label className="text-xs text-muted-foreground">Metadata URI</Label>
-                <a 
-                  href={tokenCreated.metadataUri}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:text-primary/80 break-all"
-                >
-                  {tokenCreated.metadataUri}
-                </a>
-              </div>
+                {/* Metadata URI hidden as requested */}
             </div>
 
             <div className="space-y-3">
@@ -265,6 +259,7 @@ export const TokenCreatorForm = () => {
 
   return (
     <section id="create" className="py-20 px-4 min-h-screen">
+      {loading && <FullScreenLoader />}
       <div className="container mx-auto max-w-7xl">
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-[1fr,400px] gap-8">
@@ -281,7 +276,6 @@ export const TokenCreatorForm = () => {
                     className="bg-input border-border h-12 rounded-lg"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="symbol" className="text-sm">Symbol</Label>
                   <Input
@@ -294,7 +288,6 @@ export const TokenCreatorForm = () => {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="decimals" className="text-sm">Decimals</Label>
@@ -309,25 +302,11 @@ export const TokenCreatorForm = () => {
                     className="bg-input border-border h-12 rounded-lg"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="image" className="text-sm">Image</Label>
                   <div className="relative">
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <label 
-                      htmlFor="image"
-                      className={`flex items-center justify-center gap-2 border h-12 rounded-lg cursor-pointer transition-colors overflow-hidden ${
-                        imagePreview 
-                          ? 'border-primary bg-primary/5 p-1' 
-                          : 'bg-input border-border hover:border-primary'
-                      }`}
-                    >
+                    <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    <label htmlFor="image" className={`flex items-center justify-center gap-2 border h-12 rounded-lg cursor-pointer transition-colors overflow-hidden ${imagePreview ? 'border-primary bg-primary/5 p-1' : 'bg-input border-border hover:border-primary'}`}>
                       {imagePreview ? (
                         <img src={imagePreview} alt="Preview" className="h-full w-full object-cover rounded" />
                       ) : (
@@ -340,31 +319,14 @@ export const TokenCreatorForm = () => {
                   </div>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="supply" className="text-sm">Supply</Label>
-                <Input
-                  id="supply"
-                  type="number"
-                  min="1"
-                  value={formData.supply}
-                  onChange={(e) => setFormData({ ...formData, supply: e.target.value })}
-                  required
-                  className="bg-input border-border h-12 rounded-lg"
-                />
+                <Input id="supply" type="number" min="1" value={formData.supply} onChange={(e) => setFormData({ ...formData, supply: e.target.value })} required className="bg-input border-border h-12 rounded-lg" />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="bg-input border-border rounded-lg resize-none"
-                />
+                <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={4} className="bg-input border-border rounded-lg resize-none" />
               </div>
-
               {/* Advanced Options */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
@@ -373,85 +335,43 @@ export const TokenCreatorForm = () => {
                       <span className="font-medium">Freeze Authority</span>
                       <span className="text-xs text-muted-foreground">On (required)</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Freeze authority will be assigned to your wallet after creation.
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Freeze authority will be assigned to your wallet after creation.</p>
                   </div>
                 </div>
-
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
                     <span className="font-medium">Revoke Mint (+0.05 SOL)</span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Permanently disable minting more tokens (recommended for fairness)
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Permanently disable minting more tokens (recommended for fairness)</p>
                   </div>
-                  <Switch
-                    checked={formData.revokeMint}
-                    onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
-                  />
+                  <Switch checked={formData.revokeMint} onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })} />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowMoreOptions(!showMoreOptions)}
-                  className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
-                >
+                <button type="button" onClick={() => setShowMoreOptions(!showMoreOptions)} className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors">
                   {showMoreOptions ? 'Hide More Options' : 'Show More Options'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${showMoreOptions ? 'rotate-180' : ''}`} />
                 </button>
-
                 {/* Social Media Links */}
                 {showMoreOptions && (
                   <div className="space-y-3 pt-2">
                     <div className="space-y-2">
                       <Label htmlFor="telegram" className="text-sm">Telegram link</Label>
-                      <Input
-                        id="telegram"
-                        placeholder="(Optional)"
-                        value={formData.telegram}
-                        onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
-                        className="bg-input border-border h-12 rounded-lg"
-                      />
+                      <Input id="telegram" placeholder="(Optional)" value={formData.telegram} onChange={(e) => setFormData({ ...formData, telegram: e.target.value })} className="bg-input border-border h-12 rounded-lg" />
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="website" className="text-sm">Website link</Label>
-                      <Input
-                        id="website"
-                        placeholder="(Optional)"
-                        value={formData.website}
-                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                        className="bg-input border-border h-12 rounded-lg"
-                      />
+                      <Input id="website" placeholder="(Optional)" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} className="bg-input border-border h-12 rounded-lg" />
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="twitter" className="text-sm">Twitter or X link</Label>
-                      <Input
-                        id="twitter"
-                        placeholder="(Optional)"
-                        value={formData.twitter}
-                        onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                        className="bg-input border-border h-12 rounded-lg"
-                      />
+                      <Input id="twitter" placeholder="(Optional)" value={formData.twitter} onChange={(e) => setFormData({ ...formData, twitter: e.target.value })} className="bg-input border-border h-12 rounded-lg" />
                     </div>
                   </div>
                 )}
               </div>
-
-              <p className="text-xs text-center text-muted-foreground">
-                tip: coin data cannot be changed after creation
-              </p>
-
+              <p className="text-xs text-center text-muted-foreground">tip: coin data cannot be changed after creation</p>
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 <div className="relative">
-                  <Button
-                    type="submit"
-                    disabled={loading || !publicKey}
-                    className="w-full h-20 bg-gradient-to-r from-accent to-purple-600 hover:opacity-90 text-base font-semibold rounded-xl"
-                  >
+                  <Button type="submit" disabled={loading || !publicKey} className="w-full h-20 bg-gradient-to-r from-accent to-purple-600 hover:opacity-90 text-base font-semibold rounded-xl">
                     {loading ? (
                       <div className="flex flex-col items-center gap-1">
                         <Loader2 className="h-5 w-5 animate-spin" />
@@ -470,45 +390,26 @@ export const TokenCreatorForm = () => {
                   </Button>
                 </div>
               </div>
-
               {!publicKey && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Connect your wallet to create a token
-                </p>
+                <p className="text-center text-sm text-muted-foreground">Connect your wallet to create a token</p>
               )}
             </div>
-
             {/* Right Column - Live Preview */}
             <div className="lg:sticky lg:top-24 h-fit">
               <Card className="bg-card border-border p-6">
-                  <div className="text-center mb-6">
+                <div className="text-center mb-6">
                   <h3 className="text-lg font-semibold text-muted-foreground mb-6">Live Preview</h3>
-                  
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center overflow-hidden">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Token logo" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-3xl font-bold text-white">?</span>
-                      )}
+                      {imagePreview ? <img src={imagePreview} alt="Token logo" className="w-full h-full object-cover" /> : <span className="text-3xl font-bold text-white">?</span>}
                     </div>
-                    
                     <div>
-                      <h4 className="text-xl font-bold">
-                        {formData.name || 'Token Name'}
-                      </h4>
-                      <p className="text-sm text-muted-foreground uppercase tracking-wider">
-                        ${formData.symbol || 'TICKER'}
-                      </p>
+                      <h4 className="text-xl font-bold">{formData.name || 'Token Name'}</h4>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wider">${formData.symbol || 'TICKER'}</p>
                     </div>
-                    
                     <div className="w-full pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Your token description will appear here...
-                      </p>
-                      {formData.description && (
-                        <p className="text-sm">{formData.description}</p>
-                      )}
+                      <p className="text-xs text-muted-foreground mb-2">Your token description will appear here...</p>
+                      {formData.description && <p className="text-sm">{formData.description}</p>}
                       <p className="text-xs text-muted-foreground mt-2">Preview</p>
                     </div>
                   </div>
