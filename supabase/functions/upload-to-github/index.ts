@@ -44,7 +44,7 @@ serve(async (req) => {
     } else if (type === 'metadata') {
       // Create and upload metadata JSON
       filePath = `metadata/${fileName}`;
-      const metadataJson = {
+      const baseJson: any = {
         name: metadata!.name,
         symbol: metadata!.symbol,
         description: metadata!.description,
@@ -58,6 +58,9 @@ serve(async (req) => {
           ]
         }
       };
+      const metadataJson = (metadata && (metadata as any).extensions)
+        ? { ...baseJson, extensions: (metadata as any).extensions }
+        : baseJson;
       fileContent = btoa(JSON.stringify(metadataJson, null, 2));
     } else {
       throw new Error('Invalid upload type');

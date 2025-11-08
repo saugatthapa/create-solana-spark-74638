@@ -31,7 +31,7 @@ export const TokenCreatorForm = () => {
     decimals: '9',
     supply: '1000000000',
     description: '',
-    revokeFreeze: true,
+    revokeFreeze: false,
     revokeMint: false,
     telegram: '',
     website: '',
@@ -243,7 +243,7 @@ export const TokenCreatorForm = () => {
                     decimals: '9',
                     supply: '1000000000',
                     description: '',
-                    revokeFreeze: true,
+                    revokeFreeze: false,
                     revokeMint: false,
                     telegram: '',
                     website: '',
@@ -370,24 +370,20 @@ export const TokenCreatorForm = () => {
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Revoke Freeze</span>
-                      <span className="text-xs text-destructive">(required)</span>
+                      <span className="font-medium">Freeze Authority</span>
+                      <span className="text-xs text-muted-foreground">On (required)</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Revoke Freeze allows you to create a liquidity pool
+                      Freeze authority will be assigned to your wallet after creation.
                     </p>
                   </div>
-                  <Switch
-                    checked={formData.revokeFreeze}
-                    onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
-                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
-                    <span className="font-medium">Revoke Mint</span>
+                    <span className="font-medium">Revoke Mint (+0.05 SOL)</span>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Mint Authority allows you to increase tokens supply
+                      Permanently disable minting more tokens (recommended for fairness)
                     </p>
                   </div>
                   <Switch

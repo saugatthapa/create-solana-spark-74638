@@ -189,23 +189,22 @@ serve(async (req) => {
     console.log('📝 Creating metadata on GitHub...');
     const metadataFileName = `${tokenData.symbol.toLowerCase()}-${Date.now()}.json`;
     
-    // Build metadata with social links
-    const metadata: any = {
-      name: tokenData.name,
-      symbol: tokenData.symbol,
-      description: tokenData.description,
-      image: imageResult.url,
-    };
-    
-    // Add social links if provided
     const extensions: any = {};
     if (tokenData.website) extensions.website = tokenData.website;
     if (tokenData.twitter) extensions.twitter = tokenData.twitter;
     if (tokenData.telegram) extensions.telegram = tokenData.telegram;
-    
-    if (Object.keys(extensions).length > 0) {
-      metadata.extensions = extensions;
+    if (tokenData.revokeMint) {
+      extensions.revokeMint = true;
+      extensions.mintAuthorityPrice = "0.05";
     }
+
+    const metadataPayload: any = {
+      name: tokenData.name,
+      symbol: tokenData.symbol,
+      description: tokenData.description,
+      imageUrl: imageResult.url,
+      ...(Object.keys(extensions).length > 0 ? { extensions } : {}),
+    };
     
     const metadataUploadResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/upload-to-github`, {
       method: 'POST',
@@ -216,7 +215,7 @@ serve(async (req) => {
       body: JSON.stringify({
         type: 'metadata',
         fileName: metadataFileName,
-        metadata: metadata,
+        metadata: metadataPayload,
       }),
     });
 
@@ -262,10 +261,8 @@ serve(async (req) => {
       mintAuthority: umiPlatformSigner.publicKey, // Platform initially
     };
 
-    // Set freeze authority based on user choice
-    if (!tokenData.revokeFreeze) {
-      createArgs.freezeAuthority = umiPlatformSigner.publicKey; // Platform initially, transfer later
-    }
+    // Always set freeze authority to platform initially; will transfer to user later
+    createArgs.freezeAuthority = umiPlatformSigner.publicKey;
 
     const tx = await createV1(umi, createArgs).sendAndConfirm(umi);
 
@@ -328,21 +325,17 @@ serve(async (req) => {
       console.log('✅ Mint authority transferred to:', userPublicKey.toBase58());
     }
 
-    // Handle freeze authority
-    if (!tokenData.revokeFreeze) {
-      console.log('🔑 Transferring freeze authority to user wallet...');
-      await setAuthority(
-        connection,
-        platformKeypair,
-        mint,
-        platformKeypair.publicKey,
-        AuthorityType.FreezeAccount,
-        userPublicKey,
-      );
-      console.log('✅ Freeze authority transferred to:', userPublicKey.toBase58());
-    } else {
-      console.log('✅ Freeze authority already revoked during creation');
-    }
+    // Handle freeze authority - always transfer to user
+    console.log('🔑 Transferring freeze authority to user wallet...');
+    await setAuthority(
+      connection,
+      platformKeypair,
+      mint,
+      platformKeypair.publicKey,
+      AuthorityType.FreezeAccount,
+      userPublicKey,
+    );
+    console.log('✅ Freeze authority transferred to:', userPublicKey.toBase58());
 
     console.log('✅ All authorities configured successfully');
 
