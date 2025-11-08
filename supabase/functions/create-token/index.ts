@@ -250,12 +250,13 @@ serve(async (req) => {
     const freezeAuthority = tokenData.revokeFreeze ? null : umiUserPublicKey;
 
     // Create mint and metadata in one transaction using Metaplex createV1
+    // NOTE: updateAuthority must be platform initially since platform is signing
     console.log('📝 Sending create transaction...');
     const createArgs: any = {
       mint: umiMintSigner,
       authority: umiPlatformSigner,
       payer: umiPlatformSigner,
-      updateAuthority: mintAuthority,
+      updateAuthority: umiPlatformSigner.publicKey, // Always platform initially
       name: tokenData.name,
       symbol: tokenData.symbol,
       uri: metadataResult.url,
@@ -330,6 +331,17 @@ serve(async (req) => {
       );
       console.log('✅ Mint authority transferred to user');
     }
+
+    // Step 7: Transfer metadata update authority to user
+    // Note: We always transfer this to the user since they should control their token's metadata
+    console.log('📝 Transferring metadata update authority to user...');
+    const { updateV1 } = await import("npm:@metaplex-foundation/mpl-token-metadata");
+    await updateV1(umi, {
+      mint: umiPublicKey(mint.toBase58()),
+      authority: umiPlatformSigner,
+      newUpdateAuthority: umiUserPublicKey,
+    }).sendAndConfirm(umi);
+    console.log('✅ Metadata update authority transferred to user');
 
     return new Response(
       JSON.stringify({
