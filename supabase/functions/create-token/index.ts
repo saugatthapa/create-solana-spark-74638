@@ -155,12 +155,12 @@ serve(async (req) => {
 
     console.log('💰 Transfer amount:', transferAmount / 1_000_000_000, 'SOL');
 
-    const REQUIRED_PAYMENT = 0.15 * 1_000_000_000; // 0.15 SOL in lamports
+    const REQUIRED_PAYMENT = 0.15 * 1_000_000_000; // 0.15 SOL in lamports (fixed price for all options)
     if (transferAmount < REQUIRED_PAYMENT) {
       throw new Error(`Invalid payment amount: ${transferAmount / 1_000_000_000} SOL (required: 0.15 SOL)`);
     }
 
-    console.log('✅ Payment verified:', transferAmount / 1_000_000_000, 'SOL');
+    console.log('✅ Payment verified: 0.15 SOL from user', userPublicKey.toBase58());
 
     // Step 1: Upload image to GitHub FIRST
     console.log('📸 Uploading image to GitHub...');
@@ -245,30 +245,26 @@ serve(async (req) => {
     const umiUserPublicKey = umiPublicKey(userPublicKey.toBase58());
     umi.use(signerIdentity(umiPlatformSigner));
 
-    // Determine authorities based on revoke options
-    const mintAuthority = tokenData.revokeMint ? umiPlatformSigner.publicKey : umiUserPublicKey;
-    const freezeAuthority = tokenData.revokeFreeze ? null : umiUserPublicKey;
-
-    // Create mint and metadata in one transaction using Metaplex createV1
-    // NOTE: updateAuthority must be platform initially since platform is signing
-    console.log('📝 Sending create transaction...');
+    // Create mint and metadata with PLATFORM as all authorities initially
+    // We'll transfer them to user after minting is complete
+    console.log('📝 Creating token with platform authorities...');
     const createArgs: any = {
       mint: umiMintSigner,
       authority: umiPlatformSigner,
       payer: umiPlatformSigner,
-      updateAuthority: umiPlatformSigner.publicKey, // Always platform initially
+      updateAuthority: umiPlatformSigner.publicKey, // Platform initially
       name: tokenData.name,
       symbol: tokenData.symbol,
       uri: metadataResult.url,
       sellerFeeBasisPoints: percentAmount(0),
       tokenStandard: TokenStandard.Fungible,
       decimals: tokenData.decimals,
-      mintAuthority: mintAuthority,
+      mintAuthority: umiPlatformSigner.publicKey, // Platform initially
     };
 
-    // Only add freezeAuthority if not revoking
+    // Set freeze authority based on user choice
     if (!tokenData.revokeFreeze) {
-      createArgs.freezeAuthority = freezeAuthority;
+      createArgs.freezeAuthority = umiPlatformSigner.publicKey; // Platform initially, transfer later
     }
 
     const tx = await createV1(umi, createArgs).sendAndConfirm(umi);
@@ -291,49 +287,64 @@ serve(async (req) => {
 
     // Step 5: Mint supply to user
     const supplyAmount = BigInt(tokenData.supply) * BigInt(10 ** tokenData.decimals);
-    console.log('🎨 Minting supply to user:', supplyAmount.toString());
-    
-    // Determine who has mint authority for minting
-    const currentMintAuthority = tokenData.revokeMint ? platformKeypair : platformKeypair;
+    console.log('🎨 Minting', supplyAmount.toString(), 'tokens to user:', userPublicKey.toBase58());
     
     const mintSignature = await mintTo(
       connection,
       platformKeypair, // payer
       mint,
       userTokenAccount.address,
-      currentMintAuthority, // use platform as authority initially
+      platformKeypair, // platform has mint authority at this point
       supplyAmount,
     );
 
-    console.log('✅ Tokens minted:', mintSignature);
+    console.log('✅ Tokens minted to user wallet');
 
-    // Step 6: Transfer or revoke mint authority based on user choice
+    // Step 6: Transfer authorities to user based on their choices
+    console.log('🔑 Transferring authorities to user wallet:', userPublicKey.toBase58());
+    
+    // Handle mint authority
     if (tokenData.revokeMint) {
-      console.log('🔒 Revoking mint authority...');
+      console.log('🔒 Revoking mint authority (no one can mint more tokens)...');
       await setAuthority(
         connection,
-        platformKeypair, // payer
+        platformKeypair,
         mint,
-        platformKeypair.publicKey, // current authority
+        platformKeypair.publicKey,
         AuthorityType.MintTokens,
-        null, // revoke (set to null)
+        null, // revoke
       );
-      console.log('✅ Mint authority revoked');
+      console.log('✅ Mint authority revoked permanently');
     } else {
-      console.log('🔑 Transferring mint authority to user...');
+      console.log('🔑 Transferring mint authority to user wallet...');
       await setAuthority(
         connection,
-        platformKeypair, // payer
+        platformKeypair,
         mint,
-        platformKeypair.publicKey, // current authority
+        platformKeypair.publicKey,
         AuthorityType.MintTokens,
-        userPublicKey, // transfer to user
+        userPublicKey,
       );
-      console.log('✅ Mint authority transferred to user');
+      console.log('✅ Mint authority transferred to:', userPublicKey.toBase58());
     }
 
-    // Step 7: Transfer metadata update authority to user
-    // Note: We always transfer this to the user since they should control their token's metadata
+    // Handle freeze authority
+    if (!tokenData.revokeFreeze) {
+      console.log('🔑 Transferring freeze authority to user wallet...');
+      await setAuthority(
+        connection,
+        platformKeypair,
+        mint,
+        platformKeypair.publicKey,
+        AuthorityType.FreezeAccount,
+        userPublicKey,
+      );
+      console.log('✅ Freeze authority transferred to:', userPublicKey.toBase58());
+    } else {
+      console.log('✅ Freeze authority already revoked during creation');
+    }
+
+    // Transfer metadata update authority to user
     console.log('📝 Transferring metadata update authority to user...');
     const { updateV1 } = await import("npm:@metaplex-foundation/mpl-token-metadata");
     await updateV1(umi, {
@@ -341,7 +352,7 @@ serve(async (req) => {
       authority: umiPlatformSigner,
       newUpdateAuthority: umiUserPublicKey,
     }).sendAndConfirm(umi);
-    console.log('✅ Metadata update authority transferred to user');
+    console.log('✅ Metadata update authority transferred to:', userPublicKey.toBase58());
 
     return new Response(
       JSON.stringify({

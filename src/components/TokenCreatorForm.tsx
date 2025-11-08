@@ -38,12 +38,9 @@ export const TokenCreatorForm = () => {
     twitter: '',
   });
 
-  // Calculate dynamic cost based on revoke options
+  // Fixed cost - always 0.15 SOL with launch discount
   const calculateCost = () => {
-    let cost = 0.15; // Base cost
-    if (formData.revokeFreeze) cost += 0.1;
-    if (formData.revokeMint) cost += 0.05;
-    return cost;
+    return 0.15;
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,7 +84,8 @@ export const TokenCreatorForm = () => {
       console.log('🚀 Starting token creation...');
       
       // Step 1: Send payment to platform wallet
-      const platformWalletAddress = new PublicKey(import.meta.env.VITE_PLATFORM_WALLET_ADDRESS || '11111111111111111111111111111111');
+      // Platform wallet derived from PLATFORM_WALLET_PRIVATE_KEY secret
+      const platformWalletAddress = new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
       const totalCost = calculateCost();
       const platformFee = totalCost * LAMPORTS_PER_SOL;
       
@@ -379,13 +377,10 @@ export const TokenCreatorForm = () => {
                       Revoke Freeze allows you to create a liquidity pool
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-yellow-500">+0.1 SOL</span>
-                    <Switch
-                      checked={formData.revokeFreeze}
-                      onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
-                    />
-                  </div>
+                  <Switch
+                    checked={formData.revokeFreeze}
+                    onCheckedChange={(checked) => setFormData({ ...formData, revokeFreeze: checked })}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
@@ -395,13 +390,10 @@ export const TokenCreatorForm = () => {
                       Mint Authority allows you to increase tokens supply
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-yellow-500">+0.05 SOL</span>
-                    <Switch
-                      checked={formData.revokeMint}
-                      onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
-                    />
-                  </div>
+                  <Switch
+                    checked={formData.revokeMint}
+                    onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
+                  />
                 </div>
 
                 <button
