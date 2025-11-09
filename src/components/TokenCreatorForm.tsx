@@ -454,18 +454,18 @@ export const TokenCreatorForm = () => {
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 <div className="relative">
-                  <Button type="submit" disabled={loading || !publicKey} className="w-full h-20 bg-gradient-to-r from-accent to-purple-600 hover:opacity-90 text-base font-semibold rounded-xl">
+                  <Button type="submit" disabled={loading || !publicKey} className="w-full h-auto min-h-[80px] py-4 px-4 bg-gradient-to-r from-accent to-purple-600 hover:opacity-90 text-base font-semibold rounded-xl">
                     {loading ? (
                       <div className="flex flex-col items-center gap-1">
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Creating Token...</span>
+                        <span className="text-sm sm:text-base">Creating Token...</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-lg">Total Creation Cost</span>
-                        <div className="flex items-center gap-2">
-                          <span className="line-through text-sm opacity-60">{getOriginalPrice().toFixed(2)} SOL</span>
-                          <span className="text-2xl font-bold text-green-400">{calculateCost().toFixed(2)} SOL</span>
+                      <div className="flex flex-col items-center gap-1 w-full">
+                        <span className="text-base sm:text-lg">Total Creation Cost</span>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <span className="line-through text-xs sm:text-sm opacity-60">{getOriginalPrice().toFixed(2)} SOL</span>
+                          <span className="text-xl sm:text-2xl font-bold text-green-400">{calculateCost().toFixed(2)} SOL</span>
                         </div>
                         <span className="text-xs text-yellow-400">🎉 {getDiscountPercentage()}% Launch Discount!</span>
                       </div>

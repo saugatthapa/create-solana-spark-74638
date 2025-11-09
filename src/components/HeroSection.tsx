@@ -68,7 +68,7 @@ export const HeroSection = () => {
           </div>
           <div className="glass-card rounded-2xl p-6 border border-border hover:border-accent transition-all hover:scale-105">
             <div className="text-4xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-              $0.15
+              0.1 SOL
             </div>
             <div className="text-muted-foreground mt-2">Average Cost</div>
           </div>
