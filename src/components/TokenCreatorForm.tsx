@@ -24,7 +24,7 @@ export const TokenCreatorForm = () => {
       return new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
     } else {
       // Devnet platform wallet (different from mainnet)
-      return new PublicKey('8vWfXkYHZGQV6oSeU5vVbC3mY7VuJQnfDj5BKPhFcnRx');
+      return new PublicKey('5TMbgA1QbLmDPGEy8Bm1dYhZnEGfL9b1uDHozQbfhy9N');
     }
   };
   
