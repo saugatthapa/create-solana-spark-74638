@@ -17,6 +17,16 @@ export const TokenCreatorForm = () => {
   const { network } = useNetwork();
   const { publicKey, sendTransaction } = useWallet();
   const { toast } = useToast();
+
+  // Different platform wallets for mainnet and devnet
+  const getPlatformWallet = () => {
+    if (network === 'mainnet-beta') {
+      return new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
+    } else {
+      // Devnet platform wallet (different from mainnet)
+      return new PublicKey('8vWfXkYHZGQV6oSeU5vVbC3mY7VuJQnfDj5BKPhFcnRx');
+    }
+  };
   
   const [loading, setLoading] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
@@ -112,9 +122,12 @@ export const TokenCreatorForm = () => {
       }
       
       // Step 1: Send payment to platform wallet
-      // Platform wallet derived from PLATFORM_WALLET_PRIVATE_KEY secret
-      const platformWalletAddress = new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
+      const platformWalletAddress = getPlatformWallet();
       const platformFee = Math.round(totalCost * LAMPORTS_PER_SOL);
+      
+      console.log(`🌐 Network: ${network.toUpperCase()}`);
+      console.log(`💼 Platform Wallet: ${platformWalletAddress.toBase58()}`);
+      console.log(`🔗 RPC: ${connection.rpcEndpoint}`);
       
       const paymentTransaction = new Transaction().add(
         SystemProgram.transfer({
@@ -128,8 +141,6 @@ export const TokenCreatorForm = () => {
       paymentTransaction.feePayer = publicKey;
 
       console.log('💰 Sending payment to platform...');
-      console.log(`📡 Network: ${network}`);
-      console.log(`🔗 RPC Endpoint: ${connection.rpcEndpoint}`);
       
       const paymentSignature = await sendTransaction(paymentTransaction, connection, {
         skipPreflight: false,
@@ -222,7 +233,7 @@ export const TokenCreatorForm = () => {
         // Simulation failed
         else if (errorMsg.includes('simulation') || errorMsg.includes('failed')) {
           errorTitle = "Transaction Failed";
-          errorDescription = "Transaction simulation failed. Please ensure you're on the correct network and have sufficient SOL for fees.";
+          errorDescription = `Transaction simulation failed on ${network === 'mainnet-beta' ? 'MAINNET' : 'DEVNET'}. Please ensure you have sufficient SOL for fees. ${network === 'devnet' ? 'On devnet, use a faucet to get test SOL.' : ''}`;
         }
         // Wallet not connected
         else if (errorMsg.includes('wallet')) {
@@ -335,6 +346,25 @@ export const TokenCreatorForm = () => {
     <section id="create" className="py-20 px-4 min-h-screen">
       {loading && <FullScreenLoader />}
       <div className="container mx-auto max-w-7xl">
+        {/* Network Warning Banner */}
+        <div className={`mb-6 p-4 rounded-lg border ${
+          network === 'devnet' 
+            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400' 
+            : 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">
+              {network === 'mainnet-beta' ? '🟢 MAINNET' : '🟡 DEVNET'}
+            </span>
+            <span className="text-sm">
+              {network === 'devnet' 
+                ? 'Testing mode - Use devnet SOL from faucet' 
+                : 'Live network - Real SOL required'
+              }
+            </span>
+          </div>
+        </div>
+        
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-[1fr,400px] gap-8">
             {/* Left Column - Form */}

@@ -13,8 +13,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PLATFORM_WALLET_PRIVATE_KEY = Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY');
-const MAINNET_RPC_URL = Deno.env.get('MAINNET_RPC_URL');
+const PLATFORM_WALLET_PRIVATE_KEY_MAINNET = Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY');
+const PLATFORM_WALLET_PRIVATE_KEY_DEVNET = Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY_DEVNET');
 // RPC will be selected per-request
 
 interface CreateTokenRequest {
@@ -42,18 +42,25 @@ serve(async (req) => {
   }
 
   try {
-    if (!PLATFORM_WALLET_PRIVATE_KEY) {
-      throw new Error('Platform wallet not configured');
-    }
-
     const { userWallet, paymentSignature, tokenData, network }: CreateTokenRequest = await req.json();
+    
+    // Select the correct platform wallet private key based on network
+    const PLATFORM_WALLET_PRIVATE_KEY = network === 'devnet'
+      ? (PLATFORM_WALLET_PRIVATE_KEY_DEVNET || PLATFORM_WALLET_PRIVATE_KEY_MAINNET)
+      : PLATFORM_WALLET_PRIVATE_KEY_MAINNET;
+    
+    if (!PLATFORM_WALLET_PRIVATE_KEY) {
+      throw new Error(`Platform wallet not configured for ${network || 'mainnet-beta'}`);
+    }
 
     // Use Helius RPC for mainnet, public devnet for devnet
     const SOLANA_RPC_URL = network === 'devnet' 
       ? 'https://api.devnet.solana.com' 
       : 'https://mainnet.helius-rpc.com/?api-key=abcb4f6b-7e64-44c9-b57e-3ee753f9266a';
 
-    console.log('🚀 Starting token creation for user:', userWallet, 'on', network ?? 'mainnet-beta');
+    console.log('🌐 Network:', network || 'mainnet-beta');
+    console.log('🔗 RPC URL:', SOLANA_RPC_URL);
+    console.log('🚀 Starting token creation for user:', userWallet);
 
     // Initialize Solana connection
     const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
@@ -90,7 +97,8 @@ serve(async (req) => {
     const platformKeypair = Keypair.fromSecretKey(secretKeyArray);
     const userPublicKey = new PublicKey(userWallet);
 
-    console.log('✅ Platform wallet:', platformKeypair.publicKey.toBase58());
+    console.log('✅ Platform wallet loaded:', platformKeypair.publicKey.toBase58());
+    console.log(`💼 Using ${network === 'devnet' ? 'DEVNET' : 'MAINNET'} platform wallet`);
 
     // Verify payment transaction
     console.log('🔍 Verifying payment signature:', paymentSignature);
