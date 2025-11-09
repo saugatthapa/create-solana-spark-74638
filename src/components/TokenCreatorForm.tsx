@@ -21,10 +21,10 @@ export const TokenCreatorForm = () => {
   // Different platform wallets for mainnet and devnet
   const getPlatformWallet = () => {
     if (network === 'mainnet-beta') {
-      return new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
+      return new PublicKey(import.meta.env.VITE_PLATFORM_WALLET_ADDRESS_MAINNET);
     } else {
       // Devnet platform wallet (different from mainnet)
-      return new PublicKey('5TMbgA1QbLmDPGEy8Bm1dYhZnEGfL9b1uDHozQbfhy9N');
+      return new PublicKey(import.meta.env.VITE_PLATFORM_WALLET_ADDRESS_DEVNET);
     }
   };
   
