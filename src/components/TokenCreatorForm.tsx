@@ -41,9 +41,21 @@ export const TokenCreatorForm = () => {
     twitter: '',
   });
 
-  // Fixed cost - always 0.15 SOL with launch discount
+  // Base cost 0.1 SOL, +0.05 SOL if revoke mint is enabled
   const calculateCost = () => {
-    return 0.15;
+    const baseCost = 0.1;
+    const revokeMintCost = formData.revokeMint ? 0.05 : 0;
+    return baseCost + revokeMintCost;
+  };
+
+  const getOriginalPrice = () => {
+    const currentCost = calculateCost();
+    // 75% discount: current = original * 0.25, so original = current / 0.25
+    return currentCost / 0.25;
+  };
+
+  const getDiscountPercentage = () => {
+    return 75; // 75% launch discount
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -332,18 +344,27 @@ export const TokenCreatorForm = () => {
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Freeze Authority</span>
-                      <span className="text-xs text-muted-foreground">On (required)</span>
+                      <span className="font-medium">Freeze Authority (0.1 SOL)</span>
+                      <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">Required</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Freeze authority will be assigned to your wallet after creation.</p>
                   </div>
+                  <Switch 
+                    checked={true} 
+                    disabled={true}
+                    className="data-[state=checked]:bg-primary opacity-50 cursor-not-allowed"
+                  />
                 </div>
                 <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
                     <span className="font-medium">Revoke Mint (+0.05 SOL)</span>
                     <p className="text-xs text-muted-foreground mt-1">Permanently disable minting more tokens (recommended for fairness)</p>
                   </div>
-                  <Switch checked={formData.revokeMint} onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })} />
+                  <Switch 
+                    checked={formData.revokeMint} 
+                    onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
+                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600"
+                  />
                 </div>
                 <button type="button" onClick={() => setShowMoreOptions(!showMoreOptions)} className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors">
                   {showMoreOptions ? 'Hide More Options' : 'Show More Options'}
@@ -381,10 +402,10 @@ export const TokenCreatorForm = () => {
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-lg">Total Creation Cost</span>
                         <div className="flex items-center gap-2">
-                          <span className="line-through text-sm opacity-60">0.40 SOL</span>
+                          <span className="line-through text-sm opacity-60">{getOriginalPrice().toFixed(2)} SOL</span>
                           <span className="text-2xl font-bold text-green-400">{calculateCost().toFixed(2)} SOL</span>
                         </div>
-                        <span className="text-xs text-yellow-400">🎉 62.5% Launch Discount!</span>
+                        <span className="text-xs text-yellow-400">🎉 {getDiscountPercentage()}% Launch Discount!</span>
                       </div>
                     )}
                   </Button>

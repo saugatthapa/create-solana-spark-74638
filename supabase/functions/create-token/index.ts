@@ -162,12 +162,17 @@ serve(async (req) => {
 
     console.log('💰 Transfer amount:', transferAmount / 1_000_000_000, 'SOL');
 
-    const REQUIRED_PAYMENT = 0.15 * 1_000_000_000; // 0.15 SOL in lamports (fixed price for all options)
+    // Base cost is 0.1 SOL (freeze authority included), +0.05 SOL if revoke mint is enabled
+    const baseCost = 0.1 * 1_000_000_000; // 0.1 SOL for freeze authority
+    const revokeMintCost = tokenData.revokeMint ? 0.05 * 1_000_000_000 : 0;
+    const REQUIRED_PAYMENT = baseCost + revokeMintCost;
+    
     if (transferAmount < REQUIRED_PAYMENT) {
-      throw new Error(`Invalid payment amount: ${transferAmount / 1_000_000_000} SOL (required: 0.15 SOL)`);
+      const expectedSOL = (baseCost + revokeMintCost) / 1_000_000_000;
+      throw new Error(`Invalid payment amount: ${transferAmount / 1_000_000_000} SOL (required: ${expectedSOL} SOL)`);
     }
 
-    console.log('✅ Payment verified: 0.15 SOL from user', userPublicKey.toBase58());
+    console.log('✅ Payment verified:', transferAmount / 1_000_000_000, 'SOL from user', userPublicKey.toBase58());
 
     // Step 1: Upload image to GitHub FIRST
     console.log('📸 Uploading image to GitHub...');
