@@ -102,7 +102,7 @@ export const TokenCreatorForm = () => {
       // Platform wallet derived from PLATFORM_WALLET_PRIVATE_KEY secret
       const platformWalletAddress = new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
       const totalCost = calculateCost();
-      const platformFee = totalCost * LAMPORTS_PER_SOL;
+      const platformFee = Math.round(totalCost * LAMPORTS_PER_SOL);
       
       const paymentTransaction = new Transaction().add(
         SystemProgram.transfer({
