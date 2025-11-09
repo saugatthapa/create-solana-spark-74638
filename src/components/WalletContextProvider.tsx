@@ -14,7 +14,7 @@ interface WalletContextProviderProps {
 export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children }) => {
   const { network } = useNetwork();
   const endpoint = useMemo(() => {
-    const mainnet = (import.meta as any).env?.VITE_MAINNET_RPC_URL || clusterApiUrl('mainnet-beta');
+    const mainnet = 'https://mainnet.helius-rpc.com/?api-key=abcb4f6b-7e64-44c9-b57e-3ee753f9266a';
     const devnet = clusterApiUrl('devnet');
     return network === 'mainnet-beta' ? mainnet : devnet;
   }, [network]);

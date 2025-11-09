@@ -48,10 +48,10 @@ serve(async (req) => {
 
     const { userWallet, paymentSignature, tokenData, network }: CreateTokenRequest = await req.json();
 
-    // Use custom mainnet RPC or fallback to public devnet
+    // Use Helius RPC for mainnet, public devnet for devnet
     const SOLANA_RPC_URL = network === 'devnet' 
       ? 'https://api.devnet.solana.com' 
-      : (MAINNET_RPC_URL || 'https://api.mainnet-beta.solana.com');
+      : 'https://mainnet.helius-rpc.com/?api-key=abcb4f6b-7e64-44c9-b57e-3ee753f9266a';
 
     console.log('🚀 Starting token creation for user:', userWallet, 'on', network ?? 'mainnet-beta');
 
