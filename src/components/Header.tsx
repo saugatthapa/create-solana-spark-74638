@@ -1,5 +1,6 @@
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { NetworkSelector } from '@/components/NetworkSelector';
+import { WalletBalance } from '@/components/WalletBalance';
 import logo from '@/assets/lunaforge-logo.png';
 
 export const Header = () => {
@@ -11,6 +12,7 @@ export const Header = () => {
           <span className="text-xl font-bold">LunaForge</span>
         </div>
         <div className="flex items-center gap-3">
+          <WalletBalance />
           <NetworkSelector />
           <WalletMultiButton className="!bg-accent hover:!bg-accent/90 !rounded-lg !h-11 !px-6 !font-semibold !text-sm transition-all" />
         </div>

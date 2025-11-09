@@ -197,10 +197,54 @@ export const TokenCreatorForm = () => {
 
     } catch (error) {
       console.error('❌ Error creating token:', error);
+      
+      let errorTitle = "Error Creating Token";
+      let errorDescription = "An unexpected error occurred. Please try again.";
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        // Insufficient balance
+        if (errorMsg.includes('insufficient') || errorMsg.includes('balance')) {
+          errorTitle = "Insufficient Balance";
+          errorDescription = error.message;
+        }
+        // User rejected transaction
+        else if (errorMsg.includes('rejected') || errorMsg.includes('user denied') || error.message.includes('4001')) {
+          errorTitle = "Transaction Rejected";
+          errorDescription = "You rejected the transaction in your wallet.";
+        }
+        // Network/Connection errors
+        else if (errorMsg.includes('network') || errorMsg.includes('connection') || errorMsg.includes('fetch')) {
+          errorTitle = "Network Error";
+          errorDescription = "Unable to connect to Solana network. Please check your internet connection and try again.";
+        }
+        // Simulation failed
+        else if (errorMsg.includes('simulation') || errorMsg.includes('failed')) {
+          errorTitle = "Transaction Failed";
+          errorDescription = "Transaction simulation failed. Please ensure you're on the correct network and have sufficient SOL for fees.";
+        }
+        // Wallet not connected
+        else if (errorMsg.includes('wallet')) {
+          errorTitle = "Wallet Error";
+          errorDescription = error.message;
+        }
+        // RPC errors
+        else if (errorMsg.includes('rpc') || errorMsg.includes('-32')) {
+          errorTitle = "RPC Error";
+          errorDescription = "Failed to communicate with Solana network. Please try again or switch networks.";
+        }
+        // Generic error with message
+        else if (error.message) {
+          errorDescription = error.message;
+        }
+      }
+      
       toast({
-        title: "Error Creating Token",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
+        duration: 8000,
       });
     } finally {
       setLoading(false);
