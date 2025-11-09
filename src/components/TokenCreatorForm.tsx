@@ -363,7 +363,7 @@ export const TokenCreatorForm = () => {
                   <Switch 
                     checked={formData.revokeMint} 
                     onCheckedChange={(checked) => setFormData({ ...formData, revokeMint: checked })}
-                    className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600"
+                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted"
                   />
                 </div>
                 <button type="button" onClick={() => setShowMoreOptions(!showMoreOptions)} className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors">

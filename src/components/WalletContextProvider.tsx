@@ -13,7 +13,11 @@ interface WalletContextProviderProps {
 
 export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children }) => {
   const { network } = useNetwork();
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = useMemo(() => {
+    const mainnet = (import.meta as any).env?.VITE_MAINNET_RPC_URL || clusterApiUrl('mainnet-beta');
+    const devnet = clusterApiUrl('devnet');
+    return network === 'mainnet-beta' ? mainnet : devnet;
+  }, [network]);
   
   const wallets = useMemo(
     () => [
