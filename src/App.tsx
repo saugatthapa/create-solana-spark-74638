@@ -18,6 +18,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <GoogleAnalytics />
         <NetworkProvider>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -28,7 +29,6 @@ const App = () => (
         </NetworkProvider>
       </BrowserRouter>
       <Analytics />
-      <GoogleAnalytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
