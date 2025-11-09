@@ -98,10 +98,22 @@ export const TokenCreatorForm = () => {
     try {
       console.log('🚀 Starting token creation...');
       
+      // Check wallet balance first
+      const balance = await connection.getBalance(publicKey);
+      const balanceInSOL = balance / LAMPORTS_PER_SOL;
+      const totalCost = calculateCost();
+      const requiredBalance = totalCost + 0.01; // Add 0.01 SOL for transaction fees
+      
+      console.log(`💰 Wallet balance: ${balanceInSOL.toFixed(4)} SOL`);
+      console.log(`💳 Required: ${requiredBalance.toFixed(4)} SOL (${totalCost} SOL + fees)`);
+      
+      if (balanceInSOL < requiredBalance) {
+        throw new Error(`Insufficient balance. You have ${balanceInSOL.toFixed(4)} SOL but need at least ${requiredBalance.toFixed(4)} SOL (${totalCost} SOL + transaction fees)`);
+      }
+      
       // Step 1: Send payment to platform wallet
       // Platform wallet derived from PLATFORM_WALLET_PRIVATE_KEY secret
       const platformWalletAddress = new PublicKey('FYno4cE4oaUVjoorFthLcfu4MQHJFg6ocotrZkwUqaLA');
-      const totalCost = calculateCost();
       const platformFee = Math.round(totalCost * LAMPORTS_PER_SOL);
       
       const paymentTransaction = new Transaction().add(
@@ -116,7 +128,13 @@ export const TokenCreatorForm = () => {
       paymentTransaction.feePayer = publicKey;
 
       console.log('💰 Sending payment to platform...');
-      const paymentSignature = await sendTransaction(paymentTransaction, connection);
+      console.log(`📡 Network: ${network}`);
+      console.log(`🔗 RPC Endpoint: ${connection.rpcEndpoint}`);
+      
+      const paymentSignature = await sendTransaction(paymentTransaction, connection, {
+        skipPreflight: false,
+        maxRetries: 3,
+      });
       
       console.log('⏳ Confirming payment...');
       await connection.confirmTransaction(paymentSignature, 'confirmed');
