@@ -46,17 +46,22 @@ serve(async (req) => {
     
     // Select the correct platform wallet private key based on network
     const PLATFORM_WALLET_PRIVATE_KEY = network === 'devnet'
-      ? (PLATFORM_WALLET_PRIVATE_KEY_DEVNET || PLATFORM_WALLET_PRIVATE_KEY_MAINNET)
+      ? PLATFORM_WALLET_PRIVATE_KEY_DEVNET
       : PLATFORM_WALLET_PRIVATE_KEY_MAINNET;
     
     if (!PLATFORM_WALLET_PRIVATE_KEY) {
       throw new Error(`Platform wallet not configured for ${network || 'mainnet-beta'}`);
     }
 
-    // Use Helius RPC for mainnet, public devnet for devnet
-    const SOLANA_RPC_URL = network === 'devnet' 
+    // Use configured RPC URLs from secrets
+    const MAINNET_RPC_URL = Deno.env.get('MAINNET_RPC_URL');
+    if (network === 'mainnet-beta' && !MAINNET_RPC_URL) {
+      throw new Error('MAINNET_RPC_URL not configured');
+    }
+    
+    const SOLANA_RPC_URL: string = network === 'devnet' 
       ? 'https://api.devnet.solana.com' 
-      : 'https://mainnet.helius-rpc.com/?api-key=abcb4f6b-7e64-44c9-b57e-3ee753f9266a';
+      : MAINNET_RPC_URL!;
 
     console.log('🌐 Network:', network || 'mainnet-beta');
     console.log('🔗 RPC URL:', SOLANA_RPC_URL);

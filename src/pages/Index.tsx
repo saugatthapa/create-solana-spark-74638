@@ -2,6 +2,8 @@ import { WalletContextProvider } from '@/components/WalletContextProvider';
 import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
 import { FeaturesSection } from '@/components/FeaturesSection';
+import { TrustSignals } from '@/components/TrustSignals';
+import { CTASection } from '@/components/CTASection';
 
 const Index = () => {
   return (
@@ -10,6 +12,8 @@ const Index = () => {
         <Header />
         <HeroSection />
         <FeaturesSection />
+        <TrustSignals />
+        <CTASection />
         
         {/* Footer */}
         <footer className="py-12 px-4 border-t border-border">
