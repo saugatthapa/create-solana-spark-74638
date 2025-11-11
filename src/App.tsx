@@ -8,6 +8,8 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
 import CreateLiquidity from "./pages/CreateLiquidity";
+import Dashboard from "./pages/Dashboard";
+import TokenAnalytics from "./pages/TokenAnalytics";
 import NotFound from "./pages/NotFound";
 import { NetworkProvider } from "@/contexts/NetworkContext";
 
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/create" element={<Create />} />
             <Route path="/create-liquidity" element={<CreateLiquidity />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/analytics/:tokenAddress" element={<TokenAnalytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

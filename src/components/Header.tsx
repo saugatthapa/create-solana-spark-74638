@@ -3,12 +3,14 @@ import { NetworkSelector } from '@/components/NetworkSelector';
 import { WalletBalance } from '@/components/WalletBalance';
 import { LiveTokenCounter } from '@/components/LiveTokenCounter';
 import { Button } from '@/components/ui/button';
-import { Droplets } from 'lucide-react';
+import { Droplets, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
 import logo from '@/assets/lunaforge-logo.png';
 
 export const Header = () => {
   const navigate = useNavigate();
+  const { publicKey } = useWallet();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
@@ -22,13 +24,23 @@ export const Header = () => {
         </a>
         <div className="flex items-center gap-3">
           <LiveTokenCounter />
+          {publicKey && (
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard')}
+              className="hidden md:flex items-center gap-2"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => navigate('/create-liquidity')}
             className="hidden md:flex items-center gap-2"
           >
             <Droplets className="w-4 h-4" />
-            Create Liquidity
+            Liquidity
           </Button>
           <WalletBalance />
           <NetworkSelector />
