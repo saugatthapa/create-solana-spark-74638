@@ -28,8 +28,8 @@ interface TokenPrice {
   };
 }
 
-const Dashboard = () => {
-  const { publicKey } = useWallet();
+const DashboardContent = () => {
+  const { publicKey, connected } = useWallet();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [tokens, setTokens] = useState<TokenCreation[]>([]);
@@ -123,178 +123,188 @@ const Dashboard = () => {
     });
   };
 
-  if (!publicKey) {
+  if (!connected || !publicKey) {
     return (
-      <WalletContextProvider>
-        <div className="min-h-screen">
-          <Header />
-          <div className="container mx-auto px-4 py-20 text-center">
-            <h1 className="text-4xl font-bold mb-4">Connect Your Wallet</h1>
-            <p className="text-muted-foreground">
-              Please connect your wallet to view your token dashboard
-            </p>
-          </div>
+      <div className="min-h-screen">
+        <Header />
+        <div className="container mx-auto px-4 py-20 mt-20 text-center">
+          <h1 className="text-4xl font-bold mb-4">Connect Your Wallet</h1>
+          <p className="text-muted-foreground">
+            Please connect your wallet to view your token dashboard
+          </p>
         </div>
-      </WalletContextProvider>
+      </div>
     );
   }
 
   return (
-    <WalletContextProvider>
-      <div className="min-h-screen">
-        <Header />
-        
-        <section className="py-20 px-4">
-          <div className="container mx-auto max-w-7xl">
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold mb-2">My Token Dashboard</h1>
-              <p className="text-muted-foreground">
-                Manage and track all tokens you've created on LunaForge
-              </p>
-            </div>
+    <div className="min-h-screen">
+      <Header />
+      
+      <section className="py-20 px-4 mt-20">
+        <div className="container mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Token Dashboard</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Manage and track all tokens you've created on LunaForge
+            </p>
+          </div>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Loading your tokens...</p>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading your tokens...</p>
+            </div>
+          ) : tokens.length === 0 ? (
+            <Card className="p-6 sm:p-12 text-center">
+              <div className="max-w-md mx-auto">
+                <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h2 className="text-xl sm:text-2xl font-bold mb-2">No Tokens Yet</h2>
+                <p className="text-muted-foreground mb-6 text-sm sm:text-base">
+                  You haven't created any tokens yet. Start your journey by creating your first token!
+                </p>
+                <Button onClick={() => navigate('/create')} size="lg">
+                  Create Your First Token
+                </Button>
               </div>
-            ) : tokens.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="max-w-md mx-auto">
-                  <TrendingUp className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h2 className="text-2xl font-bold mb-2">No Tokens Yet</h2>
-                  <p className="text-muted-foreground mb-6">
-                    You haven't created any tokens yet. Start your journey by creating your first token!
-                  </p>
-                  <Button onClick={() => navigate('/create')} size="lg">
-                    Create Your First Token
-                  </Button>
-                </div>
-              </Card>
-            ) : (
-              <div className="grid gap-6">
-                {tokens.map((token) => {
-                  const price = prices[token.token_address];
-                  
-                  return (
-                    <Card key={token.id} className="p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex items-start gap-6">
-                        {/* Token Image */}
-                        <div className="flex-shrink-0">
-                          {token.token_image ? (
-                            <img
-                              src={token.token_image}
-                              alt={token.token_name}
-                              className="w-20 h-20 rounded-full object-cover border-2 border-border"
-                            />
-                          ) : (
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center text-white text-2xl font-bold">
-                              {token.token_symbol[0]}
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:gap-6">
+              {tokens.map((token) => {
+                const price = prices[token.token_address];
+                
+                return (
+                  <Card key={token.id} className="p-4 sm:p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                      {/* Token Image */}
+                      <div className="flex-shrink-0">
+                        {token.token_image ? (
+                          <img
+                            src={token.token_image}
+                            alt={token.token_name}
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
+                            {token.token_symbol[0]}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Token Info */}
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-2">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                              <h3 className="text-xl sm:text-2xl font-bold">{token.token_name}</h3>
+                              <Badge variant="outline">{token.token_symbol}</Badge>
+                              <Badge variant={token.network === 'mainnet-beta' ? 'default' : 'secondary'}>
+                                {token.network === 'mainnet-beta' ? 'Mainnet' : 'Devnet'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Created {formatDate(token.created_at)}
+                            </p>
+                          </div>
+                          
+                          {price && (
+                            <div className="text-left sm:text-right">
+                              <div className="text-xl sm:text-2xl font-bold text-green-500">
+                                ${price.price.toFixed(6)}
+                              </div>
+                              <div className="text-xs sm:text-sm text-muted-foreground">Current Price</div>
                             </div>
                           )}
                         </div>
 
-                        {/* Token Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-2xl font-bold">{token.token_name}</h3>
-                                <Badge variant="outline">{token.token_symbol}</Badge>
-                                <Badge variant={token.network === 'mainnet-beta' ? 'default' : 'secondary'}>
-                                  {token.network === 'mainnet-beta' ? 'Mainnet' : 'Devnet'}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                Created {formatDate(token.created_at)}
-                              </p>
+                        {/* Token Address */}
+                        <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+                              <span className="text-xs text-muted-foreground flex-shrink-0">Mint:</span>
+                              <code className="text-xs sm:text-sm font-mono truncate">{token.token_address}</code>
                             </div>
-                            
-                            {price && (
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-green-500">
-                                  ${price.price.toFixed(6)}
-                                </div>
-                                <div className="text-sm text-muted-foreground">Current Price</div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Token Address */}
-                          <div className="bg-muted/50 rounded-lg p-3 mb-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-xs text-muted-foreground">Mint Address:</span>
-                                <code className="text-sm font-mono truncate">{token.token_address}</code>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => copyAddress(token.token_address)}
-                                  className="h-8"
-                                >
-                                  {copiedAddress === token.token_address ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyAddress(token.token_address)}
+                                className="h-8"
+                              >
+                                {copiedAddress === token.token_address ? (
+                                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <a
+                                href={`https://explorer.solana.com/address/${token.token_address}${
+                                  token.network === 'devnet' ? '?cluster=devnet' : ''
+                                }`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Button size="sm" variant="ghost" className="h-8">
+                                  <ExternalLink className="w-4 h-4" />
                                 </Button>
-                                <a
-                                  href={`https://explorer.solana.com/address/${token.token_address}${
-                                    token.network === 'devnet' ? '?cluster=devnet' : ''
-                                  }`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Button size="sm" variant="ghost" className="h-8">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </Button>
-                                </a>
-                              </div>
+                              </a>
                             </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex flex-wrap gap-3">
-                            <Button
-                              variant="outline"
-                              onClick={() => navigate(`/analytics/${token.token_address}`, { 
-                                state: { token } 
-                              })}
-                            >
-                              <BarChart3 className="w-4 h-4 mr-2" />
-                              View Analytics
-                            </Button>
-                            
-                            {token.network === 'mainnet-beta' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => window.open(`https://jup.ag/swap/SOL-${token.token_address}`, '_blank')}
-                                >
-                                  <TrendingUp className="w-4 h-4 mr-2" />
-                                  Trade on Jupiter
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => window.open(`https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${token.token_address}`, '_blank')}
-                                >
-                                  Trade on Raydium
-                                </Button>
-                              </>
-                            )}
                           </div>
                         </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 sm:gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/analytics/${token.token_address}`, { 
+                              state: { token } 
+                            })}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            Analytics
+                          </Button>
+                          
+                          {token.network === 'mainnet-beta' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`https://jup.ag/swap/SOL-${token.token_address}`, '_blank')}
+                                className="flex-1 sm:flex-none"
+                              >
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Jupiter
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${token.token_address}`, '_blank')}
+                                className="flex-1 sm:flex-none"
+                              >
+                                Raydium
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <WalletContextProvider>
+      <DashboardContent />
     </WalletContextProvider>
   );
 };
