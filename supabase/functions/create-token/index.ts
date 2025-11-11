@@ -364,6 +364,27 @@ serve(async (req) => {
 
     console.log('✅ All authorities configured successfully');
 
+    // Log token creation to database
+    try {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      await supabase.from('token_creations').insert({
+        token_address: mint.toBase58(),
+        token_name: tokenData.name,
+        token_symbol: tokenData.symbol,
+        token_image: imageResult.url,
+        creator_wallet: userWallet,
+        network: network || 'mainnet-beta',
+      });
+      console.log('✅ Token logged to database');
+    } catch (dbError) {
+      console.error('⚠️ Failed to log token to database:', dbError);
+      // Don't fail the entire operation if logging fails
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

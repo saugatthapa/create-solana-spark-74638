@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
+import CreateLiquidity from "./pages/CreateLiquidity";
 import NotFound from "./pages/NotFound";
 import { NetworkProvider } from "@/contexts/NetworkContext";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/create" element={<Create />} />
+            <Route path="/create-liquidity" element={<CreateLiquidity />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

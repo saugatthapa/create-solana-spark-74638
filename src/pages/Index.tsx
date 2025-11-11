@@ -4,6 +4,8 @@ import { HeroSection } from '@/components/HeroSection';
 import { FeaturesSection } from '@/components/FeaturesSection';
 import { TrustSignals } from '@/components/TrustSignals';
 import { CTASection } from '@/components/CTASection';
+import { LatestTokens } from '@/components/LatestTokens';
+import { LiveChat } from '@/components/LiveChat';
 
 const Index = () => {
   return (
@@ -13,6 +15,7 @@ const Index = () => {
         <HeroSection />
         <FeaturesSection />
         <TrustSignals />
+        <LatestTokens />
         <CTASection />
         
         {/* Footer */}
@@ -26,6 +29,7 @@ const Index = () => {
             </p>
           </div>
         </footer>
+        <LiveChat />
       </div>
     </WalletContextProvider>
   );
