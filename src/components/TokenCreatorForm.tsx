@@ -494,8 +494,8 @@ export const TokenCreatorForm = () => {
                       <div className="flex flex-col items-center gap-1 w-full">
                         <span className="text-base sm:text-lg">Create Your Token Now</span>
                         <div className="flex flex-wrap items-center justify-center gap-2">
-                          <span className="line-through text-xs sm:text-sm opacity-60">{getOriginalPrice().toFixed(1)} SOL</span>
-                          <span className="text-xl sm:text-2xl font-bold text-green-400">{calculateCost().toFixed(1)} SOL</span>
+                          <span className="line-through text-xs sm:text-sm opacity-60">{getOriginalPrice().toFixed(2)} SOL</span>
+                          <span className="text-xl sm:text-2xl font-bold text-green-400">{calculateCost().toFixed(2)} SOL</span>
                         </div>
                         <span className="text-xs text-yellow-400">🎉 {getDiscountPercentage()}% Launch Discount!</span>
                       </div>

@@ -44,13 +44,14 @@ export const LiveTokenCounter = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-      <TrendingUp className={`w-4 h-4 text-primary transition-transform ${isAnimating ? 'scale-125' : ''}`} />
-      <span className="text-sm font-medium">
+    <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary/10 border border-primary/20 rounded-lg">
+      <TrendingUp className={`w-3 h-3 sm:w-4 sm:h-4 text-primary transition-transform ${isAnimating ? 'scale-125' : ''}`} />
+      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
         <span className={`transition-all ${isAnimating ? 'scale-110 text-primary' : ''}`}>
           {count.toLocaleString()}
         </span>
-        <span className="text-muted-foreground ml-1">tokens created</span>
+        <span className="text-muted-foreground ml-1 hidden sm:inline">tokens created</span>
+        <span className="text-muted-foreground ml-1 sm:hidden">tokens</span>
       </span>
     </div>
   );
