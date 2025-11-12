@@ -7,11 +7,11 @@ export const LiveChat = () => {
       return;
     }
 
-    // Tawk.to Live Chat Integration
+    // Tawk.to Live Chat Integration with your account
     const script = document.createElement('script');
     script.id = 'tawk-script';
     script.async = true;
-    script.src = 'https://embed.tawk.to/678f1d34af5bfec1dbe25bd1/1ii9pej4e';
+    script.src = 'https://embed.tawk.to/6914ecdf2d4cd1195c7aa742/1j9srqie9';
     script.charset = 'UTF-8';
     script.setAttribute('crossorigin', '*');
     
