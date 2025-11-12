@@ -218,7 +218,11 @@ serve(async (req) => {
     if (tokenData.website) extensions.website = tokenData.website;
     if (tokenData.twitter) extensions.twitter = tokenData.twitter;
     if (tokenData.telegram) extensions.telegram = tokenData.telegram;
-    if (tokenData.revokeMint) {
+    if (!tokenData.revokeMint) {
+      // If revoke mint is OFF, user keeps mint authority (can mint more)
+      extensions.mintAuthority = true;
+    } else {
+      // If revoke mint is ON, mint authority is permanently revoked
       extensions.revokeMint = true;
       extensions.mintAuthorityPrice = "0.05";
     }
