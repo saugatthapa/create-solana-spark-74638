@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { LiveChat } from "@/components/LiveChat";
 import Index from "./pages/Index";
 import Create from "./pages/Create";
 import CreateLiquidity from "./pages/CreateLiquidity";
@@ -35,6 +36,7 @@ const App = () => (
         </NetworkProvider>
       </BrowserRouter>
       <Analytics />
+      <LiveChat />
     </TooltipProvider>
   </QueryClientProvider>
 );

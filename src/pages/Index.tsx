@@ -5,7 +5,6 @@ import { FeaturesSection } from '@/components/FeaturesSection';
 import { TrustSignals } from '@/components/TrustSignals';
 import { CTASection } from '@/components/CTASection';
 import { LatestTokens } from '@/components/LatestTokens';
-import { LiveChat } from '@/components/LiveChat';
 
 const Index = () => {
   return (
@@ -29,7 +28,6 @@ const Index = () => {
             </p>
           </div>
         </footer>
-        <LiveChat />
       </div>
     </WalletContextProvider>
   );
