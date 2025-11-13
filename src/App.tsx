@@ -11,6 +11,9 @@ import Create from "./pages/Create";
 import CreateLiquidity from "./pages/CreateLiquidity";
 import Dashboard from "./pages/Dashboard";
 import TokenAnalytics from "./pages/TokenAnalytics";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import HowToCreateMemeCoin from "./pages/HowToCreateMemeCoin";
 import NotFound from "./pages/NotFound";
 import { NetworkProvider } from "@/contexts/NetworkContext";
 
@@ -30,6 +33,9 @@ const App = () => (
             <Route path="/create-liquidity" element={<CreateLiquidity />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/analytics/:tokenAddress" element={<TokenAnalytics />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/how-to-create-meme-coin" element={<HowToCreateMemeCoin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
