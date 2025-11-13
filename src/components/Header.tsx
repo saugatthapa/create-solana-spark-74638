@@ -3,7 +3,7 @@ import { NetworkSelector } from '@/components/NetworkSelector';
 import { WalletBalance } from '@/components/WalletBalance';
 import { LiveTokenCounter } from '@/components/LiveTokenCounter';
 import { Button } from '@/components/ui/button';
-import { Droplets, LayoutDashboard } from 'lucide-react';
+import { Droplets, LayoutDashboard, BookOpen, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import logo from '@/assets/lunaforge-logo.png';
@@ -25,6 +25,26 @@ export const Header = () => {
           </a>
           
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/how-to-create-meme-coin')}
+              className="hidden md:flex items-center gap-2 h-9 sm:h-10"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span className="hidden lg:inline">How to Create</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/blog')}
+              className="hidden md:flex items-center gap-2 h-9 sm:h-10"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden lg:inline">Blog</span>
+            </Button>
+            
             <div className="hidden lg:block">
               <LiveTokenCounter />
             </div>
