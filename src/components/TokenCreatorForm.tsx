@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Keypair, TransactionInstruction } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Keypair } from '@solana/web3.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,27 +11,6 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Upload, ChevronDown, ExternalLink, CheckCircle } from 'lucide-react';
 import { FullScreenLoader } from '@/components/FullScreenLoader';
 import { useNetwork } from '@/contexts/NetworkContext';
-
-// Phantom Lighthouse Program ID
-const LIGHTHOUSE_PROGRAM_ID = new PublicKey('Light1111111111111111111111111111111111111111');
-
-// Create Lighthouse domain verification instruction
-const createLighthouseInstruction = (domain: string, walletPublicKey: PublicKey): TransactionInstruction => {
-  const domainBytes = Buffer.from(domain, 'utf-8');
-  const data = Buffer.concat([
-    Buffer.from([0]), // Instruction discriminator
-    Buffer.from([domainBytes.length]), // Domain length
-    domainBytes, // Domain string
-  ]);
-
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: walletPublicKey, isSigner: true, isWritable: false },
-    ],
-    programId: LIGHTHOUSE_PROGRAM_ID,
-    data,
-  });
-};
 
 export const TokenCreatorForm = () => {
   const { connection } = useConnection();
@@ -150,18 +129,13 @@ export const TokenCreatorForm = () => {
       console.log(`💼 Platform Wallet: ${platformWalletAddress.toBase58()}`);
       console.log(`🔗 RPC: ${connection.rpcEndpoint}`);
       
-      // Create Lighthouse instruction for domain verification
-      const lighthouseIx = createLighthouseInstruction('lunaforge.online', publicKey);
-      
-      const paymentTransaction = new Transaction()
-        .add(lighthouseIx) // Add Lighthouse verification first
-        .add(
-          SystemProgram.transfer({
-            fromPubkey: publicKey,
-            toPubkey: platformWalletAddress,
-            lamports: platformFee,
-          })
-        );
+      const paymentTransaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: platformWalletAddress,
+          lamports: platformFee,
+        })
+      );
 
       paymentTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
       paymentTransaction.feePayer = publicKey;
